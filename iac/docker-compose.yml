@@ -38,7 +38,7 @@ services:
         Password=Dev!Password123;
         TrustServerCertificate=True;
         MultipleActiveResultSets=True
-      Okta__Authority: "${OKTA_AUTHORITY:-https://trial-6718362.okta.com/oauth2/default}"
+      Okta__Authority: "${OKTA_AUTHORITY:-https://dev-12345.okta.com/oauth2/default}"
       Okta__Audience: "${OKTA_AUDIENCE:-api://default}"
       KeyVault__VaultUri: ""          # Disabled locally; secrets come from env
       ApplicationInsights__ConnectionString: ""
@@ -62,8 +62,8 @@ services:
       dockerfile: ../../iac/dockerfiles/web-app.Dockerfile
       args:
         VITE_API_URL: "http://localhost:5000"
-        VITE_OKTA_ISSUER: "${OKTA_AUTHORITY:-https://trial-6718362.okta.com/oauth2/default}"
-        VITE_OKTA_CLIENT_ID: "${OKTA_CLIENT_ID:-0oawc73mv0yRdGGHJ697}"
+        VITE_OKTA_ISSUER: "${OKTA_AUTHORITY:-https://dev-12345.okta.com/oauth2/default}"
+        VITE_OKTA_CLIENT_ID: "${OKTA_CLIENT_ID:-CLIENT1234567890}"
         VITE_OKTA_REDIRECT_URI: "http://localhost:3000/login/callback"
     ports:
       - "3000:8080"
