@@ -73,20 +73,20 @@ These themes should inform any enhancements, presentations, or documentation:
 ```
 patient-registry-mvp/
 │
-├── prd/271c9944-*/               # Business Analysis stage outputs
+├── prd/               # Business Analysis stage outputs
 │   ├── prd.md                    # Full Product Requirements Document
 │   ├── user_stories.md           # Epics and user stories with acceptance criteria
 │   ├── acceptance_criteria.md    # Detailed acceptance criteria per feature
 │   ├── ambiguities.md            # Open questions / assumptions made
 │   └── prd_summary_for_architect.md  # Technical handoff summary
 │
-├── architecture/271c9944-*/      # Architecture stage outputs
+├── architecture/      # Architecture stage outputs
 │   ├── system_design.md          # Full system design with C4 diagrams
 │   ├── api_specs/api.yaml        # OpenAPI 3.0 spec for NGR API
 │   ├── adrs/                     # Architecture Decision Records (ADRs)
 │   └── components.json           # Component manifest used by downstream agents
 │
-├── src/271c9944-*/               # Engineer stage outputs (~61 files)
+├── src/               # Engineer stage outputs (~61 files)
 │   ├── ngr-api/                  # ASP.NET Core 8 REST API (C# 12)
 │   │   ├── Controllers/          # API controllers (PatientRegistry, Forms, Reports, etc.)
 │   │   ├── Entities/             # EF Core domain entities (23 files)
@@ -101,10 +101,10 @@ patient-registry-mvp/
 │   └── ngr-database/             # EF Core database project
 │       └── Migrations/           # Azure SQL schema migrations
 │
-├── tests/271c9944-*/             # QA stage outputs
+├── tests/             # QA stage outputs
 │   └── api/UnitTests/            # xUnit unit tests for API controllers
 │
-├── iac/271c9944-*/               # DevOps stage outputs (~32 files)
+├── iac/               # DevOps stage outputs (~32 files)
 │   ├── terraform/                # 27 Terraform modules for Azure infra
 │   │   ├── main.tf               # Root module, provider config
 │   │   ├── networking.tf         # VNet, subnets, NSGs, WAF
@@ -122,7 +122,7 @@ patient-registry-mvp/
 │   │   └── docker-compose.yml    # Local dev: SQL Server + API + React
 │   └── runbook.md                # Ops runbook: deploy, rollback, scaling, incident response
 │
-└── reports/271c9944-*/
+└── reports/
     └── delivery_report.json      # Pipeline completion manifest
 ```
 

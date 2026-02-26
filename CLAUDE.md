@@ -6,7 +6,7 @@ This repository contains the MVP artifacts for the **Next Generation Patient Reg
 
 **Pipeline Run ID:** `271c9944-1e04-4d3d-91b9-9c0d9b99a354`
 
-All artifact directories are namespaced under this run ID (e.g., `src/271c9944-*/`).
+Artifact directories were previously namespaced under this run ID; the directory structure is now flat (e.g., `src/ngr-api/`, `iac/terraform/`).
 
 ## Tech Stack (MANDATORY — dictated by CFF RFP)
 
@@ -29,17 +29,17 @@ All artifact directories are namespaced under this run ID (e.g., `src/271c9944-*
 ## Key Paths
 
 ```
-prd/271c9944-*/                     # PRD, user stories, acceptance criteria
-architecture/271c9944-*/            # System design, API spec, ADRs, data model
-src/271c9944-*/ngr-api/             # ASP.NET Core 8 REST API
-src/271c9944-*/ngr-web-app/         # React 18 TypeScript SPA
-src/271c9944-*/ngr-database/        # EF Core entities, DbContext, migrations
-tests/271c9944-*/                   # xUnit test suite
-iac/271c9944-*/terraform/           # Azure infrastructure (Terraform)
-iac/271c9944-*/cicd/                # Azure DevOps pipeline YAML
-iac/271c9944-*/dockerfiles/         # Dockerfiles for API + Web
-iac/271c9944-*/docker-compose.yml   # Local dev environment
-iac/271c9944-*/runbook.md           # Operations runbook
+prd/                     # PRD, user stories, acceptance criteria
+architecture/            # System design, API spec, ADRs, data model
+src/ngr-api/             # ASP.NET Core 8 REST API
+src/ngr-web-app/         # React 18 TypeScript SPA
+src/ngr-database/        # EF Core entities, DbContext, migrations
+tests/                   # xUnit test suite
+iac/terraform/           # Azure infrastructure (Terraform)
+iac/cicd/                # Azure DevOps pipeline YAML
+iac/dockerfiles/         # Dockerfiles for API + Web
+iac/docker-compose.yml   # Local dev environment
+iac/runbook.md           # Operations runbook
 ```
 
 ## Architecture Conventions
@@ -57,7 +57,7 @@ iac/271c9944-*/runbook.md           # Operations runbook
 ## Local Development
 
 ```bash
-# From iac/271c9944-*/
+# From iac/
 docker-compose up --build -d
 ```
 
@@ -76,7 +76,7 @@ docker-compose up --build -d
 ## Azure Deployment
 
 ```bash
-# From iac/271c9944-*/terraform/
+# From iac/terraform/
 terraform init
 terraform plan -var-file=environments/dev.tfvars
 terraform apply -var-file=environments/dev.tfvars
@@ -108,9 +108,9 @@ The architecture must remain extensible to support all of the above in future ph
 
 ## Key Reference Documents
 
-- **PRD:** `prd/271c9944-*/prd.md`
-- **System Design:** `architecture/271c9944-*/system_design.md`
-- **Data Model:** `architecture/271c9944-*/data_model.md`
-- **API Spec (OpenAPI 3.0):** `architecture/271c9944-*/api_specs/api.yaml`
-- **ADRs:** `architecture/271c9944-*/adrs/`
-- **Runbook:** `iac/271c9944-*/runbook.md`
+- **PRD:** `prd/prd.md`
+- **System Design:** `architecture/system_design.md`
+- **Data Model:** `architecture/data_model.md`
+- **API Spec (OpenAPI 3.0):** `architecture/api_specs/api.yaml`
+- **ADRs:** `architecture/adrs/`
+- **Runbook:** `iac/runbook.md`

@@ -27,8 +27,8 @@ services:
   # ── NGR API (ASP.NET Core 8) ───────────────────────────────────────────────
   api:
     build:
-      context: ../../src/271c9944-1e04-4d3d-91b9-9c0d9b99a354/ngr-api
-      dockerfile: ../../../iac/271c9944-1e04-4d3d-91b9-9c0d9b99a354/dockerfiles/api.Dockerfile
+      context: ../src/ngr-api
+      dockerfile: ../../iac/dockerfiles/api.Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ConnectionStrings__DefaultConnection: >-
@@ -58,8 +58,8 @@ services:
   # ── NGR Web App (React 18 / Vite → nginx) ─────────────────────────────────
   web-app:
     build:
-      context: ../../src/271c9944-1e04-4d3d-91b9-9c0d9b99a354/ngr-web-app
-      dockerfile: ../../../iac/271c9944-1e04-4d3d-91b9-9c0d9b99a354/dockerfiles/web-app.Dockerfile
+      context: ../src/ngr-web-app
+      dockerfile: ../../iac/dockerfiles/web-app.Dockerfile
       args:
         VITE_API_URL: "http://localhost:5000"
         VITE_OKTA_ISSUER: "${OKTA_AUTHORITY:-https://trial-6718362.okta.com/oauth2/default}"

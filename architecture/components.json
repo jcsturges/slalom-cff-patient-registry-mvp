@@ -13,8 +13,8 @@
         "/api/content", "/api/programs", "/api/users",
         "/api/import/csv", "/api/export/data"
       ],
-      "spec_key": "architecture/271c9944-1e04-4d3d-91b9-9c0d9b99a354/api_specs/api.yaml",
-      "design_key": "architecture/271c9944-1e04-4d3d-91b9-9c0d9b99a354/system_design.md",
+      "spec_key": "architecture/api_specs/api.yaml",
+      "design_key": "architecture/system_design.md",
       "notes": "ASP.NET Core 8 Web API hosted on Azure App Service (Linux). Okta JWT validation middleware. Entity Framework Core 8 with Azure SQL Database. Azure Key Vault for secrets. Serilog structured logging."
     },
     {
@@ -23,8 +23,8 @@
       "language": "TypeScript",
       "framework": "React 18",
       "dependencies": ["@okta/okta-auth-js", "@okta/okta-react", "react-router-dom", "react-query", "axios", "vite"],
-      "spec_key": "architecture/271c9944-1e04-4d3d-91b9-9c0d9b99a354/api_specs/api.yaml",
-      "design_key": "architecture/271c9944-1e04-4d3d-91b9-9c0d9b99a354/system_design.md",
+      "spec_key": "architecture/api_specs/api.yaml",
+      "design_key": "architecture/system_design.md",
       "notes": "React 18 TypeScript SPA hosted on Azure App Service. Okta Auth JS SDK for OIDC login. Protected routes. Pages: patient roster, eCRF forms, reports, content management, CSV import."
     },
     {
@@ -33,8 +33,8 @@
       "language": "T-SQL",
       "framework": "Entity Framework Core 8",
       "dependencies": ["azure-sql", "entity-framework-core-8"],
-      "spec_key": "architecture/271c9944-1e04-4d3d-91b9-9c0d9b99a354/data_model.md",
-      "design_key": "architecture/271c9944-1e04-4d3d-91b9-9c0d9b99a354/data_model.md",
+      "spec_key": "architecture/data_model.md",
+      "design_key": "architecture/data_model.md",
       "notes": "Azure SQL Database (Business Critical tier). EF Core 8 entity classes, ApplicationDbContext, migrations, T-SQL schema scripts, seed data. Tables: Patients, Encounters, FormDefinitions, FormSubmissions, Reports, Users, Roles, AuditLog, Programs, Content."
     }
   ]

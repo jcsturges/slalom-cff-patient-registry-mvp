@@ -99,7 +99,7 @@ Every technology choice is dictated by the CFF RFP and cannot be changed.
 
 ## Repository Structure
 
-All artifacts are namespaced under run ID `271c9944-1e04-4d3d-91b9-9c0d9b99a354`.
+This repository was produced by pipeline run ID `271c9944-1e04-4d3d-91b9-9c0d9b99a354`.
 
 ```
 patient-registry-mvp/
@@ -107,21 +107,21 @@ patient-registry-mvp/
 ├── CLAUDE_CONTEXT.md                  # Detailed project context document
 ├── README.md                          # This file
 │
-├── prd/271c9944-*/                    # Business Analysis outputs
+├── prd/                    # Business Analysis outputs
 │   ├── prd.md                         #   Full Product Requirements Document
 │   ├── user_stories.md                #   Epics and user stories
 │   ├── acceptance_criteria.md         #   Acceptance criteria per feature
 │   ├── ambiguities.md                 #   Open questions / assumptions
 │   └── prd_summary_for_architect.md   #   Technical handoff summary
 │
-├── architecture/271c9944-*/           # Architecture outputs
+├── architecture/           # Architecture outputs
 │   ├── system_design.md               #   C4 model, deployment topology
 │   ├── data_model.md                  #   Database schema specification
 │   ├── api_specs/api.yaml             #   OpenAPI 3.0 specification
 │   ├── components.json                #   Component manifest
 │   └── adrs/                          #   Architecture Decision Records (38 files)
 │
-├── src/271c9944-*/                    # Source code (61 files)
+├── src/                    # Source code (61 files)
 │   ├── ngr-api/                       #   ASP.NET Core 8 REST API
 │   │   ├── Program.cs                 #     App bootstrapping, DI, middleware
 │   │   ├── NGR.Api.csproj             #     Project file, NuGet dependencies
@@ -149,11 +149,11 @@ patient-registry-mvp/
 │           ├── 001_InitialSchema.sql  #       Schema creation (T-SQL)
 │           └── 002_SeedData.sql       #       Reference data
 │
-├── tests/271c9944-*/                  # Test suite
+├── tests/                  # Test suite
 │   └── api/UnitTests/Controllers/
 │       └── PatientsControllerTests.cs #   xUnit controller tests
 │
-├── iac/271c9944-*/                    # Infrastructure as Code (32 files)
+├── iac/                    # Infrastructure as Code (32 files)
 │   ├── terraform/                     #   Terraform modules
 │   │   ├── main.tf                    #     Root module (all Azure resources)
 │   │   ├── variables.tf               #     Input variables
@@ -183,7 +183,7 @@ patient-registry-mvp/
 │   ├── docker-compose.yml             #   Local dev: SQL + API + Web
 │   └── runbook.md                     #   Ops runbook
 │
-└── reports/271c9944-*/
+└── reports/
     └── delivery_report.json           # Pipeline completion manifest
 ```
 
@@ -193,14 +193,14 @@ patient-registry-mvp/
 
 | Document | Path | Description |
 |----------|------|-------------|
-| Product Requirements | [`prd/271c9944-*/prd.md`](prd/271c9944-1e04-4d3d-91b9-9c0d9b99a354/prd.md) | Full PRD with functional and non-functional requirements |
-| User Stories | [`prd/271c9944-*/user_stories.md`](prd/271c9944-1e04-4d3d-91b9-9c0d9b99a354/user_stories.md) | Epics and user stories with acceptance criteria |
-| System Design | [`architecture/271c9944-*/system_design.md`](architecture/271c9944-1e04-4d3d-91b9-9c0d9b99a354/system_design.md) | C4 diagrams, deployment topology, component architecture |
-| Data Model | [`architecture/271c9944-*/data_model.md`](architecture/271c9944-1e04-4d3d-91b9-9c0d9b99a354/data_model.md) | Full database schema, indexes, retention policies |
-| API Specification | [`architecture/271c9944-*/api_specs/api.yaml`](architecture/271c9944-1e04-4d3d-91b9-9c0d9b99a354/api_specs/api.yaml) | OpenAPI 3.0 spec for all endpoints |
-| Operations Runbook | [`iac/271c9944-*/runbook.md`](iac/271c9944-1e04-4d3d-91b9-9c0d9b99a354/runbook.md) | Deploy, rollback, scaling, monitoring, incident response |
-| CI/CD Pipeline | [`iac/271c9944-*/cicd/azure-pipelines.yml`](iac/271c9944-1e04-4d3d-91b9-9c0d9b99a354/cicd/azure-pipelines.yml) | 7-stage Azure DevOps pipeline |
-| Ambiguities | [`prd/271c9944-*/ambiguities.md`](prd/271c9944-1e04-4d3d-91b9-9c0d9b99a354/ambiguities.md) | Open questions and assumptions made during generation |
+| Product Requirements | [`prd/prd.md`](prd/prd.md) | Full PRD with functional and non-functional requirements |
+| User Stories | [`prd/user_stories.md`](prd/user_stories.md) | Epics and user stories with acceptance criteria |
+| System Design | [`architecture/system_design.md`](architecture/system_design.md) | C4 diagrams, deployment topology, component architecture |
+| Data Model | [`architecture/data_model.md`](architecture/data_model.md) | Full database schema, indexes, retention policies |
+| API Specification | [`architecture/api_specs/api.yaml`](architecture/api_specs/api.yaml) | OpenAPI 3.0 spec for all endpoints |
+| Operations Runbook | [`iac/runbook.md`](iac/runbook.md) | Deploy, rollback, scaling, monitoring, incident response |
+| CI/CD Pipeline | [`iac/cicd/azure-pipelines.yml`](iac/cicd/azure-pipelines.yml) | 7-stage Azure DevOps pipeline |
+| Ambiguities | [`prd/ambiguities.md`](prd/ambiguities.md) | Open questions and assumptions made during generation |
 
 ---
 
@@ -243,7 +243,7 @@ Ensure the following are installed:
 Create a `.env` file alongside `docker-compose.yml` with your Okta app values:
 
 ```bash
-# iac/271c9944-1e04-4d3d-91b9-9c0d9b99a354/.env
+# iac/.env
 OKTA_AUTHORITY=https://dev-YOUR_ORG.okta.com/oauth2/default
 OKTA_CLIENT_ID=your_okta_client_id
 ```
@@ -253,7 +253,7 @@ OKTA_CLIENT_ID=your_okta_client_id
 ### Step 3 — Start All Services
 
 ```bash
-cd iac/271c9944-1e04-4d3d-91b9-9c0d9b99a354
+cd iac
 docker-compose up --build -d
 ```
 
@@ -275,7 +275,7 @@ No manual migration step is needed. When the API starts in `Development` mode, i
 
 The tables are created in the `dbo` schema (EF Core default). They will be empty — use the API endpoints or Swagger UI to create test records.
 
-> The raw SQL migration scripts at `src/271c9944-*/ngr-database/Migrations/` use a different `ngr` schema and are intended for production Azure SQL deployment only.
+> The raw SQL migration scripts at `src/ngr-database/Migrations/` use a different `ngr` schema and are intended for production Azure SQL deployment only.
 
 ### Step 5 — Verify Everything is Running
 
@@ -321,7 +321,7 @@ For active API or frontend development, run the API and web app natively so chan
 #### 7a — Start the Database Only
 
 ```bash
-cd iac/271c9944-1e04-4d3d-91b9-9c0d9b99a354
+cd iac
 
 # Start only the SQL container (skip the API and web-app containers)
 docker-compose up -d sql
@@ -337,7 +337,7 @@ You should see `sql` with status `healthy` before proceeding.
 `appsettings.Development.json` already points to `localhost:1433`, so no extra configuration is needed.
 
 ```bash
-cd src/271c9944-1e04-4d3d-91b9-9c0d9b99a354/ngr-api
+cd src/ngr-api
 
 # Hot reload — recompiles and restarts on every file save
 dotnet watch run
@@ -360,7 +360,7 @@ Vite's dev server provides Hot Module Replacement (HMR) — React components upd
 **One-time setup:** Create a `.env.local` file in the `ngr-web-app/` directory (gitignored) with your environment values:
 
 ```bash
-cd src/271c9944-1e04-4d3d-91b9-9c0d9b99a354/ngr-web-app
+cd src/ngr-web-app
 
 cat > .env.local << 'EOF'
 VITE_API_URL=http://localhost:5000
@@ -392,7 +392,7 @@ The app starts at **http://localhost:3000** with full HMR. Changes to `.tsx`, `.
 #### 7e — Stopping the Database
 
 ```bash
-cd iac/271c9944-1e04-4d3d-91b9-9c0d9b99a354
+cd iac
 
 # Stop the SQL container (preserves data volume)
 docker-compose stop sql
@@ -474,7 +474,7 @@ Use the values from steps 2-3 to populate:
 
 ## Azure Infrastructure Provisioning
 
-All Azure infrastructure is defined in Terraform under `iac/271c9944-*/terraform/`.
+All Azure infrastructure is defined in Terraform under `iac/terraform/`.
 
 ### Resources Provisioned
 
@@ -525,7 +525,7 @@ az storage container create \
 ### Step 2: Initialize Terraform
 
 ```bash
-cd iac/271c9944-1e04-4d3d-91b9-9c0d9b99a354/terraform
+cd iac/terraform
 
 # Login to Azure
 az login
@@ -584,15 +584,15 @@ After infrastructure is provisioned, build and push Docker images:
 az acr login --name acrngrdev
 
 # Build and push API
-docker build -f iac/271c9944-*/dockerfiles/api.Dockerfile \
+docker build -f iac/dockerfiles/api.Dockerfile \
   -t acrngrdev.azurecr.io/ngr-api:latest \
-  src/271c9944-*/ngr-api/
+  src/ngr-api/
 docker push acrngrdev.azurecr.io/ngr-api:latest
 
 # Build and push Web App
-docker build -f iac/271c9944-*/dockerfiles/web-app.Dockerfile \
+docker build -f iac/dockerfiles/web-app.Dockerfile \
   -t acrngrdev.azurecr.io/ngr-web-app:latest \
-  src/271c9944-*/ngr-web-app/
+  src/ngr-web-app/
 docker push acrngrdev.azurecr.io/ngr-web-app:latest
 
 # Update App Services to use the new images
@@ -619,7 +619,7 @@ az webapp config container set \
 
 ## CI/CD Pipeline
 
-The Azure DevOps pipeline (`iac/271c9944-*/cicd/azure-pipelines.yml`) has 7 stages:
+The Azure DevOps pipeline (`iac/cicd/azure-pipelines.yml`) has 7 stages:
 
 ```
 ┌─────────────┐   ┌──────────┐   ┌──────────────┐   ┌───────────────┐
@@ -655,7 +655,7 @@ The Azure DevOps pipeline (`iac/271c9944-*/cicd/azure-pipelines.yml`) has 7 stag
 
 ## API Reference
 
-The full OpenAPI 3.0 specification is at [`architecture/271c9944-*/api_specs/api.yaml`](architecture/271c9944-1e04-4d3d-91b9-9c0d9b99a354/api_specs/api.yaml).
+The full OpenAPI 3.0 specification is at [`architecture/api_specs/api.yaml`](architecture/api_specs/api.yaml).
 
 **Base URLs:**
 
@@ -686,7 +686,7 @@ The full OpenAPI 3.0 specification is at [`architecture/271c9944-*/api_specs/api
 
 ## Data Model
 
-The database uses 21 entity types. The SQL migration scripts create tables in the `ngr` schema; the API's EF Core `ApplicationDbContext` uses the default `dbo` schema (14 entities). Full specification is in [`architecture/271c9944-*/data_model.md`](architecture/271c9944-1e04-4d3d-91b9-9c0d9b99a354/data_model.md).
+The database uses 21 entity types. The SQL migration scripts create tables in the `ngr` schema; the API's EF Core `ApplicationDbContext` uses the default `dbo` schema (14 entities). Full specification is in [`architecture/data_model.md`](architecture/data_model.md).
 
 ### Core Tables
 
@@ -714,7 +714,7 @@ The database uses 21 entity types. The SQL migration scripts create tables in th
 
 ## Architecture Decision Records
 
-ADRs are located in `architecture/271c9944-*/adrs/`. Key decisions:
+ADRs are located in `architecture/adrs/`. Key decisions:
 
 | # | Decision | Choice | Rationale |
 |---|----------|--------|-----------|
@@ -733,7 +733,7 @@ ADRs are located in `architecture/271c9944-*/adrs/`. Key decisions:
 
 ## Operations & Monitoring
 
-See the full operations runbook at [`iac/271c9944-*/runbook.md`](iac/271c9944-1e04-4d3d-91b9-9c0d9b99a354/runbook.md).
+See the full operations runbook at [`iac/runbook.md`](iac/runbook.md).
 
 ### Service Endpoints
 

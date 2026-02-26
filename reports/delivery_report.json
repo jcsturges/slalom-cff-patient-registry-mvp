@@ -1,0 +1,45 @@
+{
+  "run_id": "271c9944-1e04-4d3d-91b9-9c0d9b99a354",
+  "project_name": "PatientRegistry",
+  "status": "success",
+  "all_tests_passed": true,
+  "artifact_root": "s3://cff-ngr-mvp/",
+  "stages_completed": [
+    "ba",
+    "architect",
+    "engineer",
+    "qa",
+    "devops"
+  ],
+  "artifact_counts": {
+    "prd": 4,
+    "architecture": 4,
+    "src": 61,
+    "tests": 1,
+    "iac": 32
+  },
+  "artifact_highlights": {
+    "prd": "prd/prd.md",
+    "system_design": "architecture/system_design.md",
+    "api_spec": "architecture/api_specs/api.yaml",
+    "api_src": "src/ngr-api/",
+    "web_src": "src/ngr-web-app/",
+    "db_src": "src/ngr-database/",
+    "tests": "tests/api/UnitTests/",
+    "terraform": "iac/terraform/",
+    "cicd": "iac/cicd/azure-pipelines.yml",
+    "dockerfiles": "iac/dockerfiles/",
+    "runbook": "iac/runbook.md"
+  },
+  "tech_stack": {
+    "api": "ASP.NET Core 8 (C# 12)",
+    "frontend": "React 18 TypeScript",
+    "database": "Azure SQL Database (EF Core 8)",
+    "auth": "Okta (OIDC/JWT)",
+    "hosting": "Azure App Services",
+    "cicd": "Azure DevOps YAML Pipelines",
+    "iac": "Terraform (hashicorp/azurerm)",
+    "monitoring": "Azure Application Insights",
+    "security": "OWASP ZAP + SonarQube + Azure WAF"
+  }
+}
