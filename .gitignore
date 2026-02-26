@@ -1,0 +1,50 @@
+# ── Secrets & environment ──────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+iac/.env
+src/*/.env.local
+
+# ── .NET / ASP.NET Core ────────────────────────────────────────────────────────
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+# EF Core migrations bundles
+efbundles/
+# .NET user secrets (stored in AppData, but guard against local copies)
+secrets.json
+
+# ── Node / React / Vite ────────────────────────────────────────────────────────
+node_modules/
+src/*/dist/
+
+# ── Terraform ──────────────────────────────────────────────────────────────────
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+# tfvars with sensitive values — keep the committed environment files
+# but exclude any ad-hoc overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+crash.log
+
+# ── Docker ─────────────────────────────────────────────────────────────────────
+# Keep docker-compose.yml and Dockerfiles; ignore local override files
+docker-compose.override.yml
+
+# ── OS & editor ────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
+*.swo
+
+# ── Claude Code internal ───────────────────────────────────────────────────────
+.claude/settings.local.json
