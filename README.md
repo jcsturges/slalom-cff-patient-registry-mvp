@@ -63,12 +63,14 @@ NGR follows a three-tier architecture deployed on Microsoft Azure:
 
 **Authentication flow:** Users authenticate via Okta OIDC (PKCE). The React SPA obtains a JWT access token and passes it as a Bearer token to the API. The API validates the token against Okta's authorization server and enforces role-based access control (RBAC) with four roles:
 
-| Role | Access |
-|------|--------|
-| **SystemAdmin** | Full system access |
-| **FoundationAnalyst** | Foundation staff read access |
-| **ProgramAdmin** | Care program administration |
-| **ClinicalUser** | Clinical staff with patient access |
+| Role | Inherits From | Permissions |
+|------|--------------|-------------|
+| **ClinicalUser** | — | View patients, add patients, edit patients |
+| **ProgramAdmin** | ClinicalUser | + Deactivate patients, manage care programs |
+| **FoundationAnalyst** | — | View reports and read-only analytics (does not inherit ClinicalUser) |
+| **SystemAdmin** | All roles | Full access to all features |
+
+Roles are enforced both in the API (ASP.NET Core `RequireRole` policies, reading Okta's `groups` JWT claim) and in the React SPA (disabled UI controls with tooltips when the user lacks the required role). UI actions are always **disabled with a tooltip** for unauthorized users — never hidden.
 
 ---
 

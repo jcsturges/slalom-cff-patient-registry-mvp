@@ -6,18 +6,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { theme } from './theme';
 import { AppRoutes } from './routes';
 import { ErrorBoundary } from './components/ErrorBoundary';
-
-const oktaAuth = new OktaAuth({
-  issuer: import.meta.env.VITE_OKTA_ISSUER,
-  clientId: import.meta.env.VITE_OKTA_CLIENT_ID,
-  redirectUri: import.meta.env.VITE_OKTA_REDIRECT_URI,
-  scopes: (import.meta.env.VITE_OKTA_SCOPES || 'openid profile email groups').split(' '),
-  pkce: true,
-  tokenManager: {
-    autoRenew: true,
-    storage: 'localStorage',
-  },
-});
+import { oktaAuth } from './lib/okta';
 
 const queryClient = new QueryClient({
   defaultOptions: {

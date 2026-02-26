@@ -42,6 +42,24 @@ iac/docker-compose.yml   # Local dev environment
 iac/runbook.md           # Operations runbook
 ```
 
+## Documentation Requirement
+
+**Every feature change or code addition must update documentation.** This is non-negotiable:
+- If a UI feature is added or changed → update the relevant section of `README.md`
+- If an API endpoint or auth rule is added or changed → update `README.md` and `CLAUDE.md`
+- If a key path, convention, or limitation changes → update `CLAUDE.md`
+- If a new service, hook, or component is introduced → note it in `CLAUDE.md` under Architecture Conventions
+
+## RBAC UI Convention
+
+**Buttons and actions gated by role must be disabled (never hidden) when the user lacks permission.** A `Tooltip` must explain why.
+
+- Use the `RoleGatedButton` component (`src/ngr-web-app/src/components/RoleGatedButton.tsx`) for all role-gated actions.
+- Use the `useRoles` hook (`src/ngr-web-app/src/hooks/useRoles.ts`) to read permissions from the Okta access token.
+- For page-level access (e.g., direct URL navigation to `/patients/new` without the role), render an `<Alert severity="error">` explaining the required role.
+- Never hide buttons from users who lack permission — always show them disabled so users understand what access they're missing and who to contact.
+- `useRoles` mirrors the server-side policies in `Program.cs` exactly. When adding new policies, update both.
+
 ## Architecture Conventions
 
 - **API pattern:** RESTful (not GraphQL). Controllers → Services → EF Core DbContext.

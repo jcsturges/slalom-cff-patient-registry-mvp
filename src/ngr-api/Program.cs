@@ -96,7 +96,10 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ClockSkew = TimeSpan.FromMinutes(2)
+            ClockSkew = TimeSpan.FromMinutes(2),
+            // Okta sends roles in the "groups" claim, not the default
+            // http://schemas.microsoft.com/ws/2008/06/identity/claims/role
+            RoleClaimType = "groups"
         };
     });
 
