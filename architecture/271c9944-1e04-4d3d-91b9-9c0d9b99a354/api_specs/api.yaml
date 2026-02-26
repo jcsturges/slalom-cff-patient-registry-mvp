@@ -1,0 +1,2161 @@
+openapi: 3.0.3
+info:
+  title: NGR API - Next Generation Patient Registry
+  description: |
+    RESTful API for the Cystic Fibrosis Foundation's Next Generation Patient Registry.
+    This API provides endpoints for patient management, electronic case report forms (eCRFs),
+    reporting, content management, and data import/export operations.
+  version: 1.0.0
+  contact:
+    name: NGR Development Team
+    email: ngr-support@cff.org
+  license:
+    name: Proprietary
+    url: https://www.cff.org
+
+servers:
+  - url: https://api.ngr.cff.org/v1
+    description: Production
+  - url: https://api-stage.ngr.cff.org/v1
+    description: Staging
+  - url: https://api-dev.ngr.cff.org/v1
+    description: Development
+
+tags:
+  - name: Authentication
+    description: Authentication and session management
+  - name: Patients
+    description: Patient roster management operations
+  - name: Encounters
+    description: Patient encounter management
+  - name: Forms
+    description: Electronic Case Report Form (eCRF) operations
+  - name: Reports
+    description: Reporting and data export operations
+  - name: Imports
+    description: CSV data import operations
+  - name: Content
+    description: Content management operations
+  - name: Users
+    description: User management operations
+  - name: Programs
+    description: Care program management
+
+security:
+  - bearerAuth: []
+
+paths:
+  # ============================================
+  # AUTHENTICATION ENDPOINTS
+  # ============================================
+  /auth/userinfo:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user information
+      description: Returns the authenticated user's profile and permissions
+      operationId: getUserInfo
+      responses:
+        '200':
+          description: User information retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserInfo'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # PATIENT ENDPOINTS
+  # ============================================
+  /patients:
+    get:
+      tags:
+        - Patients
+      summary: List patients
+      description: Returns a paginated list of patients accessible to the current user
+      operationId: listPatients
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/ProgramId'
+        - name: search
+          in: query
+          description: Search by name or registry ID
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by patient status
+          schema:
+            type: string
+            enum: [ACTIVE, DECEASED, TRANSFERRED]
+        - name: sortBy
+          in: query
+          description: Sort field
+          schema:
+            type: string
+            enum: [lastName, firstName, dateOfBirth, registryId]
+            default: lastName
+        - name: sortOrder
+          in: query
+          description: Sort order
+          schema:
+            type: string
+            enum: [asc, desc]
+            default: asc
+      responses:
+        '200':
+          description: Patients retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Patients
+      summary: Create a new patient
+      description: Adds a new patient to the registry and assigns to a care program
+      operationId: createPatient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePatientRequest'
+      responses:
+        '201':
+          description: Patient created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Duplicate patient detected
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DuplicatePatientResponse'
+
+  /patients/{patientId}:
+    get:
+      tags:
+        - Patients
+      summary: Get patient details
+      description: Returns detailed information for a specific patient
+      operationId: getPatient
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+      responses:
+        '200':
+          description: Patient retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatientDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Patients
+      summary: Update patient
+      description: Updates patient information
+      operationId: updatePatient
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePatientRequest'
+      responses:
+        '200':
+          description: Patient updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /patients/{patientId}/transfer:
+    post:
+      tags:
+        - Patients
+      summary: Transfer patient to another program
+      description: Transfers a patient from one care program to another
+      operationId: transferPatient
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferPatientRequest'
+      responses:
+        '200':
+          description: Patient transferred successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /patients/merge:
+    post:
+      tags:
+        - Patients
+      summary: Merge duplicate patients
+      description: Merges two patient records into one survivor record
+      operationId: mergePatients
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MergePatientsRequest'
+      responses:
+        '200':
+          description: Patients merged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ============================================
+  # ENCOUNTER ENDPOINTS
+  # ============================================
+  /patients/{patientId}/encounters:
+    get:
+      tags:
+        - Encounters
+      summary: List patient encounters
+      description: Returns all encounters for a specific patient
+      operationId: listPatientEncounters
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - name: encounterType
+          in: query
+          description: Filter by encounter type
+          schema:
+            type: string
+        - name: year
+          in: query
+          description: Filter by encounter year
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Encounters retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncounterListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags:
+        - Encounters
+      summary: Create encounter
+      description: Creates a new encounter for a patient
+      operationId: createEncounter
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateEncounterRequest'
+      responses:
+        '201':
+          description: Encounter created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /encounters/{encounterId}:
+    get:
+      tags:
+        - Encounters
+      summary: Get encounter details
+      description: Returns detailed information for a specific encounter
+      operationId: getEncounter
+      parameters:
+        - $ref: '#/components/parameters/EncounterId'
+      responses:
+        '200':
+          description: Encounter retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EncounterDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Encounters
+      summary: Update encounter
+      description: Updates encounter information
+      operationId: updateEncounter
+      parameters:
+        - $ref: '#/components/parameters/EncounterId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateEncounterRequest'
+      responses:
+        '200':
+          description: Encounter updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Encounter'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================
+  # FORM ENDPOINTS
+  # ============================================
+  /forms/definitions:
+    get:
+      tags:
+        - Forms
+      summary: List form definitions
+      description: Returns all available form definitions (eCRF templates)
+      operationId: listFormDefinitions
+      parameters:
+        - name: encounterType
+          in: query
+          description: Filter by encounter type
+          schema:
+            type: string
+        - name: isActive
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Form definitions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FormDefinition'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /forms/definitions/{formDefinitionId}:
+    get:
+      tags:
+        - Forms
+      summary: Get form definition
+      description: Returns a specific form definition with schema
+      operationId: getFormDefinition
+      parameters:
+        - name: formDefinitionId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Form definition retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormDefinitionDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /patients/{patientId}/forms:
+    get:
+      tags:
+        - Forms
+      summary: List patient forms
+      description: Returns all form submissions for a patient
+      operationId: listPatientForms
+      parameters:
+        - $ref: '#/components/parameters/PatientId'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+        - name: status
+          in: query
+          description: Filter by form status
+          schema:
+            type: string
+            enum: [DRAFT, SUBMITTED, LOCKED, ARCHIVED]
+        - name: formDefinitionId
+          in: query
+          description: Filter by form type
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Forms retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormSubmissionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /forms:
+    post:
+      tags:
+        - Forms
+      summary: Create form submission
+      description: Creates a new form submission (eCRF)
+      operationId: createFormSubmission
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFormSubmissionRequest'
+      responses:
+        '201':
+          description: Form created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormSubmission'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /forms/{formId}:
+    get:
+      tags:
+        - Forms
+      summary: Get form submission
+      description: Returns a specific form submission with data
+      operationId: getFormSubmission
+      parameters:
+        - $ref: '#/components/parameters/FormId'
+      responses:
+        '200':
+          description: Form retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormSubmissionDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Forms
+      summary: Update form submission
+      description: Updates form data (only for DRAFT status)
+      operationId: updateFormSubmission
+      parameters:
+        - $ref: '#/components/parameters/FormId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFormSubmissionRequest'
+      responses:
+        '200':
+          description: Form updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormSubmission'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Form is locked and cannot be edited
+
+  /forms/{formId}/submit:
+    post:
+      tags:
+        - Forms
+      summary: Submit form
+      description: Submits a draft form for review
+      operationId: submitForm
+      parameters:
+        - $ref: '#/components/parameters/FormId'
+      responses:
+        '200':
+          description: Form submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FormSubmission'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /forms/{formId}/validate:
+    post:
+      tags:
+        - Forms
+      summary: Validate form
+      description: Validates form data without submitting
+      operationId: validateForm
+      parameters:
+        - $ref: '#/components/parameters/FormId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidateFormRequest'
+      responses:
+        '200':
+          description: Validation results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================
+  # REPORT ENDPOINTS
+  # ============================================
+  /reports/standard:
+    get:
+      tags:
+        - Reports
+      summary: List standard reports
+      description: Returns available standard (pre-built) reports
+      operationId: listStandardReports
+      responses:
+        '200':
+          description: Standard reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StandardReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reports/standard/{reportCode}/execute:
+    post:
+      tags:
+        - Reports
+      summary: Execute standard report
+      description: Executes a standard report with optional filters
+      operationId: executeStandardReport
+      parameters:
+        - name: reportCode
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportFilters'
+      responses:
+        '200':
+          description: Report executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /reports/builder:
+    post:
+      tags:
+        - Reports
+      summary: Execute dynamic report
+      description: Executes a custom report query using the report builder
+      operationId: executeDynamicReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DynamicReportRequest'
+      responses:
+        '200':
+          description: Report executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /reports/saved:
+    get:
+      tags:
+        - Reports
+      summary: List saved reports
+      description: Returns user's saved report definitions
+      operationId: listSavedReports
+      responses:
+        '200':
+          description: Saved reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SavedReport'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Reports
+      summary: Save report
+      description: Saves a report definition for future use
+      operationId: saveReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveReportRequest'
+      responses:
+        '201':
+          description: Report saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reports/export:
+    post:
+      tags:
+        - Reports
+      summary: Export report
+      description: Exports report results to CSV or Excel
+      operationId: exportReport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportReportRequest'
+      responses:
+        '200':
+          description: Export file generated
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================================
+  # IMPORT ENDPOINTS
+  # ============================================
+  /imports/upload:
+    post:
+      tags:
+        - Imports
+      summary: Upload CSV file
+      description: Uploads a CSV file for data import
+      operationId: uploadImportFile
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                programId:
+                  type: integer
+                formDefinitionId:
+                  type: integer
+              required:
+                - file
+                - programId
+                - formDefinitionId
+      responses:
+        '201':
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /imports/{importId}:
+    get:
+      tags:
+        - Imports
+      summary: Get import job status
+      description: Returns the status and results of an import job
+      operationId: getImportJob
+      parameters:
+        - name: importId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Import job retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJobDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /imports/{importId}/preview:
+    get:
+      tags:
+        - Imports
+      summary: Preview import data
+      description: Returns a preview of the parsed import data
+      operationId: previewImport
+      parameters:
+        - name: importId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Preview data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportPreview'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /imports/{importId}/confirm:
+    post:
+      tags:
+        - Imports
+      summary: Confirm import
+      description: Confirms and processes the import to create pre-filled forms
+      operationId: confirmImport
+      parameters:
+        - name: importId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Import confirmed and processed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportJob'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================
+  # CONTENT ENDPOINTS
+  # ============================================
+  /content:
+    get:
+      tags:
+        - Content
+      summary: List content
+      description: Returns published content articles
+      operationId: listContent
+      parameters:
+        - name: category
+          in: query
+          description: Filter by category
+          schema:
+            type: string
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Content retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Content
+      summary: Create content
+      description: Creates a new content article (Foundation only)
+      operationId: createContent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateContentRequest'
+      responses:
+        '201':
+          description: Content created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Content'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /content/{contentId}:
+    get:
+      tags:
+        - Content
+      summary: Get content
+      description: Returns a specific content article
+      operationId: getContent
+      parameters:
+        - name: contentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Content retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Content'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Content
+      summary: Update content
+      description: Updates a content article (Foundation only)
+      operationId: updateContent
+      parameters:
+        - name: contentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateContentRequest'
+      responses:
+        '200':
+          description: Content updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Content'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /announcements:
+    get:
+      tags:
+        - Content
+      summary: List announcements
+      description: Returns active announcements
+      operationId: listAnnouncements
+      responses:
+        '200':
+          description: Announcements retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Announcement'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - Content
+      summary: Create announcement
+      description: Creates a new announcement (Foundation only)
+      operationId: createAnnouncement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAnnouncementRequest'
+      responses:
+        '201':
+          description: Announcement created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Announcement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ============================================
+  # USER ENDPOINTS
+  # ============================================
+  /users:
+    get:
+      tags:
+        - Users
+      summary: List users
+      description: Returns users (scoped by program for program admins)
+      operationId: listUsers
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Users retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{userId}/programs:
+    get:
+      tags:
+        - Users
+      summary: Get user program assignments
+      description: Returns programs assigned to a user
+      operationId: getUserPrograms
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User programs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProgramAssignment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    post:
+      tags:
+        - Users
+      summary: Assign user to program
+      description: Assigns a user to a care program with a role
+      operationId: assignUserToProgram
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignProgramRequest'
+      responses:
+        '201':
+          description: User assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramAssignment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  # ============================================
+  # PROGRAM ENDPOINTS
+  # ============================================
+  /programs:
+    get:
+      tags:
+        - Programs
+      summary: List care programs
+      description: Returns care programs accessible to the current user
+      operationId: listPrograms
+      parameters:
+        - $ref: '#/components/parameters/PageNumber'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Programs retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /programs/{programId}:
+    get:
+      tags:
+        - Programs
+      summary: Get program details
+      description: Returns detailed information for a care program
+      operationId: getProgram
+      parameters:
+        - $ref: '#/components/parameters/ProgramId'
+      responses:
+        '200':
+          description: Program retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProgramDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+# ============================================
+# COMPONENTS
+# ============================================
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Okta JWT access token
+
+  parameters:
+    PageNumber:
+      name: page
+      in: query
+      description: Page number (1-based)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    PageSize:
+      name: pageSize
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    PatientId:
+      name: patientId
+      in: path
+      required: true
+      description: Patient ID
+      schema:
+        type: integer
+
+    EncounterId:
+      name: encounterId
+      in: path
+      required: true
+      description: Encounter ID
+      schema:
+        type: integer
+
+    FormId:
+      name: formId
+      in: path
+      required: true
+      description: Form submission ID
+      schema:
+        type: integer
+
+    ProgramId:
+      name: programId
+      in: query
+      description: Care program ID
+      schema:
+        type: integer
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Unauthorized:
+      description: Unauthorized - authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    # ============================================
+    # COMMON SCHEMAS
+    # ============================================
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+        traceId:
+          type: string
+      required:
+        - code
+        - message
+
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalItems:
+          type: integer
+        totalPages:
+          type: integer
+
+    # ============================================
+    # USER SCHEMAS
+    # ============================================
+    UserInfo:
+      type: object
+      properties:
+        id:
+          type: integer
+        oktaId:
+          type: string
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        programs:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProgramAssignment'
+        permissions:
+          type: array
+          items:
+            type: string
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        isActive:
+          type: boolean
+        lastLoginAt:
+          type: string
+          format: date-time
+
+    UserListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    ProgramAssignment:
+      type: object
+      properties:
+        programId:
+          type: integer
+        programName:
+          type: string
+        programCode:
+          type: string
+        roleId:
+          type: integer
+        roleName:
+          type: string
+        assignedAt:
+          type: string
+          format: date-time
+
+    AssignProgramRequest:
+      type: object
+      properties:
+        programId:
+          type: integer
+        roleId:
+          type: integer
+      required:
+        - programId
+        - roleId
+
+    # ============================================
+    # PATIENT SCHEMAS
+    # ============================================
+    Patient:
+      type: object
+      properties:
+        id:
+          type: integer
+        registryId:
+          type: string
+        firstName:
+          type: string
+        middleName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        gender:
+          type: string
+        isDeceased:
+          type: boolean
+        primaryProgramId:
+          type: integer
+        primaryProgramName:
+          type: string
+
+    PatientDetail:
+      allOf:
+        - $ref: '#/components/schemas/Patient'
+        - type: object
+          properties:
+            demographics:
+              $ref: '#/components/schemas/PatientDemographics'
+            programs:
+              type: array
+              items:
+                $ref: '#/components/schemas/PatientProgramAssignment'
+            recentEncounters:
+              type: array
+              items:
+                $ref: '#/components/schemas/Encounter'
+
+    PatientDemographics:
+      type: object
+      properties:
+        address1:
+          type: string
+        address2:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        zipCode:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        ethnicity:
+          type: string
+        race:
+          type: string
+        insuranceType:
+          type: string
+        insuranceProvider:
+          type: string
+
+    PatientProgramAssignment:
+      type: object
+      properties:
+        programId:
+          type: integer
+        programName:
+          type: string
+        programCode:
+          type: string
+        localMRN:
+          type: string
+        status:
+          type: string
+        isPrimaryProgram:
+          type: boolean
+        enrollmentDate:
+          type: string
+          format: date
+
+    PatientListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Patient'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreatePatientRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          maxLength: 100
+        middleName:
+          type: string
+          maxLength: 100
+        lastName:
+          type: string
+          maxLength: 100
+        dateOfBirth:
+          type: string
+          format: date
+        gender:
+          type: string
+        programId:
+          type: integer
+        localMRN:
+          type: string
+        demographics:
+          $ref: '#/components/schemas/PatientDemographics'
+      required:
+        - firstName
+        - lastName
+        - dateOfBirth
+        - programId
+
+    UpdatePatientRequest:
+      type: object
+      properties:
+        firstName:
+          type: string
+        middleName:
+          type: string
+        lastName:
+          type: string
+        dateOfBirth:
+          type: string
+          format: date
+        gender:
+          type: string
+        demographics:
+          $ref: '#/components/schemas/PatientDemographics'
+
+    TransferPatientRequest:
+      type: object
+      properties:
+        targetProgramId:
+          type: integer
+        transferDate:
+          type: string
+          format: date
+        reason:
+          type: string
+      required:
+        - targetProgramId
+        - transferDate
+
+    MergePatientsRequest:
+      type: object
+      properties:
+        survivorPatientId:
+          type: integer
+        mergedPatientId:
+          type: integer
+        reason:
+          type: string
+      required:
+        - survivorPatientId
+        - mergedPatientId
+
+    DuplicatePatientResponse:
+      type: object
+      properties:
+        message:
+          type: string
+        potentialDuplicates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Patient'
+
+    # ============================================
+    # ENCOUNTER SCHEMAS
+    # ============================================
+    Encounter:
+      type: object
+      properties:
+        id:
+          type: integer
+        patientId:
+          type: integer
+        programId:
+          type: integer
+        encounterTypeCode:
+          type: string
+        encounterTypeName:
+          type: string
+        encounterDate:
+          type: string
+          format: date
+        encounterYear:
+          type: integer
+        status:
+          type: string
+
+    EncounterDetail:
+      allOf:
+        - $ref: '#/components/schemas/Encounter'
+        - type: object
+          properties:
+            notes:
+              type: string
+            forms:
+              type: array
+              items:
+                $ref: '#/components/schemas/FormSubmission'
+            createdAt:
+              type: string
+              format: date-time
+            createdBy:
+              type: string
+            updatedAt:
+              type: string
+              format: date-time
+            updatedBy:
+              type: string
+
+    EncounterListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Encounter'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreateEncounterRequest:
+      type: object
+      properties:
+        encounterTypeCode:
+          type: string
+        encounterDate:
+          type: string
+          format: date
+        notes:
+          type: string
+      required:
+        - encounterTypeCode
+        - encounterDate
+
+    UpdateEncounterRequest:
+      type: object
+      properties:
+        encounterDate:
+          type: string
+          format: date
+        notes:
+          type: string
+        status:
+          type: string
+
+    # ============================================
+    # FORM SCHEMAS
+    # ============================================
+    FormDefinition:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        version:
+          type: integer
+        encounterTypeCode:
+          type: string
+        isActive:
+          type: boolean
+
+    FormDefinitionDetail:
+      allOf:
+        - $ref: '#/components/schemas/FormDefinition'
+        - type: object
+          properties:
+            schemaJson:
+              type: object
+              description: JSON Schema for form fields
+            validationRulesJson:
+              type: object
+              description: Validation rules
+            uiSchemaJson:
+              type: object
+              description: UI rendering hints
+
+    FormSubmission:
+      type: object
+      properties:
+        id:
+          type: integer
+        formDefinitionId:
+          type: integer
+        formDefinitionName:
+          type: string
+        patientId:
+          type: integer
+        encounterId:
+          type: integer
+        programId:
+          type: integer
+        status:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+        submittedBy:
+          type: string
+
+    FormSubmissionDetail:
+      allOf:
+        - $ref: '#/components/schemas/FormSubmission'
+        - type: object
+          properties:
+            formDataJson:
+              type: object
+              description: Form field values
+            formDefinition:
+              $ref: '#/components/schemas/FormDefinitionDetail'
+            createdAt:
+              type: string
+              format: date-time
+            createdBy:
+              type: string
+            updatedAt:
+              type: string
+              format: date-time
+            updatedBy:
+              type: string
+
+    FormSubmissionListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/FormSubmission'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreateFormSubmissionRequest:
+      type: object
+      properties:
+        formDefinitionId:
+          type: integer
+        patientId:
+          type: integer
+        encounterId:
+          type: integer
+        formDataJson:
+          type: object
+      required:
+        - formDefinitionId
+        - patientId
+
+    UpdateFormSubmissionRequest:
+      type: object
+      properties:
+        formDataJson:
+          type: object
+      required:
+        - formDataJson
+
+    ValidateFormRequest:
+      type: object
+      properties:
+        formDataJson:
+          type: object
+      required:
+        - formDataJson
+
+    ValidationResult:
+      type: object
+      properties:
+        isValid:
+          type: boolean
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              fieldPath:
+                type: string
+              errorCode:
+                type: string
+              message:
+                type: string
+        warnings:
+          type: array
+          items:
+            type: object
+            properties:
+              fieldPath:
+                type: string
+              warningCode:
+                type: string
+              message:
+                type: string
+
+    # ============================================
+    # REPORT SCHEMAS
+    # ============================================
+    StandardReport:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        availableFilters:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              label:
+                type: string
+              type:
+                type: string
+
+    SavedReport:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        description:
+          type: string
+        queryDefinition:
+          type: object
+        isShared:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+
+    ReportFilters:
+      type: object
+      properties:
+        filters:
+          type: object
+          additionalProperties: true
+        programId:
+          type: integer
+
+    DynamicReportRequest:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            type: string
+        filters:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              operator:
+                type: string
+                enum: [eq, ne, gt, gte, lt, lte, contains, in]
+              value:
+                type: string
+        sort:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              direction:
+                type: string
+                enum: [asc, desc]
+        programId:
+          type: integer
+      required:
+        - columns
+
+    SaveReportRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        queryDefinition:
+          type: object
+        isShared:
+          type: boolean
+      required:
+        - name
+        - queryDefinition
+
+    ReportResult:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              label:
+                type: string
+              type:
+                type: string
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    ExportReportRequest:
+      type: object
+      properties:
+        format:
+          type: string
+          enum: [csv, xlsx]
+        reportDefinition:
+          type: object
+      required:
+        - format
+        - reportDefinition
+
+    # ============================================
+    # IMPORT SCHEMAS
+    # ============================================
+    ImportJob:
+      type: object
+      properties:
+        id:
+          type: integer
+        programId:
+          type: integer
+        fileName:
+          type: string
+        status:
+          type: string
+          enum: [PENDING, PROCESSING, PREVIEW, CONFIRMED, FAILED]
+        totalRows:
+          type: integer
+        processedRows:
+          type: integer
+        errorRows:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    ImportJobDetail:
+      allOf:
+        - $ref: '#/components/schemas/ImportJob'
+        - type: object
+          properties:
+            mapping:
+              type: object
+            results:
+              type: object
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  rowNumber:
+                    type: integer
+                  fieldName:
+                    type: string
+                  errorType:
+                    type: string
+                  errorMessage:
+                    type: string
+
+    ImportPreview:
+      type: object
+      properties:
+        columns:
+          type: array
+          items:
+            type: string
+        mappedColumns:
+          type: object
+          additionalProperties:
+            type: string
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    # ============================================
+    # CONTENT SCHEMAS
+    # ============================================
+    Content:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+        category:
+          type: string
+        body:
+          type: string
+        isPublished:
+          type: boolean
+        publishedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ContentListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Content'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    CreateContentRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        category:
+          type: string
+        body:
+          type: string
+        isPublished:
+          type: boolean
+      required:
+        - title
+        - category
+        - body
+
+    UpdateContentRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        category:
+          type: string
+        body:
+          type: string
+        isPublished:
+          type: boolean
+
+    Announcement:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        priority:
+          type: string
+          enum: [LOW, NORMAL, HIGH, URGENT]
+        targetAudience:
+          type: string
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+
+    CreateAnnouncementRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        message:
+          type: string
+        priority:
+          type: string
+          enum: [LOW, NORMAL, HIGH, URGENT]
+        targetAudience:
+          type: string
+          enum: [ALL, FOUNDATION, PROGRAMS]
+        startDate:
+          type: string
+          format: date-time
+        endDate:
+          type: string
+          format: date-time
+      required:
+        - title
+        - message
+        - startDate
+
+    # ============================================
+    # PROGRAM SCHEMAS
+    # ============================================
+    Program:
+      type: object
+      properties:
+        id:
+          type: integer
+        code:
+          type: string
+        name:
+          type: string
+        city:
+          type: string
+        state:
+          type: string
+        isActive:
+          type: boolean
+
+    ProgramDetail:
+      allOf:
+        - $ref: '#/components/schemas/Program'
+        - type: object
+          properties:
+            address1:
+              type: string
+            address2:
+              type: string
+            zipCode:
+              type: string
+            phone:
+              type: string
+            email:
+              type: string
+            accreditationDate:
+              type: string
+              format: date
+            patientCount:
+              type: integer
+            userCount:
+              type: integer
+
+    ProgramListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Program'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'

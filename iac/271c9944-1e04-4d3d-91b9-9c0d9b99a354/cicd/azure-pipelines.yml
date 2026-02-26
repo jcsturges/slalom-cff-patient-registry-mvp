@@ -1,0 +1,322 @@
+# PatientRegistry — Azure DevOps CI/CD Pipeline
+# Service connections required:
+#   - azure-subscription  : Azure Resource Manager
+#   - acr-connection      : Azure Container Registry
+#   - sonarqube-sc        : SonarQube
+# Variable groups required:
+#   - ngr-pipeline-secrets: OKTA_AUTHORITY, OKTA_AUDIENCE, SONAR_PROJECT_KEY, ZAP_TARGET_URL
+
+trigger:
+  branches:
+    include: [main, release/*]
+  paths:
+    exclude: ['*.md', 'docs/**']
+
+pr:
+  branches:
+    include: [main]
+
+variables:
+  - group: ngr-pipeline-secrets
+  - name: containerRegistry
+    value: ngrregistry.azurecr.io
+  - name: apiImageName
+    value: ngr-api
+  - name: webImageName
+    value: ngr-web-app
+  - name: dotnetVersion
+    value: "8.0.x"
+  - name: nodeVersion
+    value: "20.x"
+  - name: azureSubscription
+    value: azure-subscription
+  - name: apiAppNameDev
+    value: ngr-api-dev
+  - name: webAppNameDev
+    value: ngr-web-app-dev
+  - name: apiAppNameProd
+    value: ngr-api-prod
+  - name: webAppNameProd
+    value: ngr-web-app-prod
+  - name: resourceGroupDev
+    value: rg-ngr-dev
+  - name: resourceGroupProd
+    value: rg-ngr-prod
+
+stages:
+
+# ── Stage 1: Build ────────────────────────────────────────────────────────────
+- stage: Build
+  displayName: "Build & Package"
+  jobs:
+
+  - job: BuildAPI
+    displayName: "Build .NET API"
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: UseDotNet@2
+      inputs:
+        version: $(dotnetVersion)
+
+    - task: DotNetCoreCLI@2
+      displayName: Restore
+      inputs:
+        command: restore
+        projects: src/ngr-api/**/*.csproj
+
+    - task: DotNetCoreCLI@2
+      displayName: Build
+      inputs:
+        command: build
+        projects: src/ngr-api/**/*.csproj
+        arguments: --configuration Release --no-restore
+
+    - task: Docker@2
+      displayName: Build & Push API Image
+      inputs:
+        command: buildAndPush
+        containerRegistry: acr-connection
+        repository: $(apiImageName)
+        dockerfile: iac/dockerfiles/api.Dockerfile
+        buildContext: src/ngr-api
+        tags: |
+          $(Build.BuildId)
+          latest
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: src/ngr-api
+        artifact: api-src
+
+  - job: BuildWeb
+    displayName: "Build React Web App"
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: $(nodeVersion)
+
+    - script: npm ci
+      displayName: npm install
+      workingDirectory: src/ngr-web-app
+
+    - script: npm run build
+      displayName: npm build
+      workingDirectory: src/ngr-web-app
+      env:
+        VITE_API_URL: $(VITE_API_URL_DEV)
+        VITE_OKTA_ISSUER: $(OKTA_AUTHORITY)
+        VITE_OKTA_CLIENT_ID: $(OKTA_CLIENT_ID_DEV)
+
+    - task: Docker@2
+      displayName: Build & Push Web Image
+      inputs:
+        command: buildAndPush
+        containerRegistry: acr-connection
+        repository: $(webImageName)
+        dockerfile: iac/dockerfiles/web-app.Dockerfile
+        buildContext: src/ngr-web-app
+        tags: |
+          $(Build.BuildId)
+          latest
+
+# ── Stage 2: Unit Tests ───────────────────────────────────────────────────────
+- stage: Test
+  displayName: "Test"
+  dependsOn: Build
+  jobs:
+
+  - job: UnitTests
+    displayName: "xUnit Tests"
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: UseDotNet@2
+      inputs:
+        version: $(dotnetVersion)
+
+    - task: DotNetCoreCLI@2
+      displayName: Run xUnit Tests
+      inputs:
+        command: test
+        projects: tests/**/*.Tests.csproj
+        arguments: >
+          --configuration Release
+          --collect:"XPlat Code Coverage"
+          --results-directory $(Agent.TempDirectory)/TestResults
+
+    - task: PublishCodeCoverageResults@2
+      inputs:
+        summaryFileLocation: $(Agent.TempDirectory)/TestResults/**/coverage.cobertura.xml
+
+# ── Stage 3: Code Quality (SonarQube) ────────────────────────────────────────
+- stage: CodeQuality
+  displayName: "SonarQube Analysis"
+  dependsOn: Test
+  jobs:
+
+  - job: SonarQube
+    displayName: "SonarQube Scan"
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: UseDotNet@2
+      inputs:
+        version: $(dotnetVersion)
+
+    - task: SonarQubePrepare@5
+      inputs:
+        SonarQube: sonarqube-sc
+        scannerMode: MSBuild
+        projectKey: $(SONAR_PROJECT_KEY)
+        projectName: PatientRegistry
+
+    - task: DotNetCoreCLI@2
+      displayName: Build for SonarQube
+      inputs:
+        command: build
+        projects: src/ngr-api/**/*.csproj
+        arguments: --configuration Release
+
+    - task: SonarQubeAnalyze@5
+
+    - task: SonarQubePublish@5
+      inputs:
+        pollingTimeoutSec: 300
+
+# ── Stage 4: OWASP ZAP Security Scan ─────────────────────────────────────────
+- stage: SecurityScan
+  displayName: "OWASP ZAP"
+  dependsOn: Deploy_Dev
+  jobs:
+
+  - job: ZAPScan
+    displayName: "OWASP ZAP Scan"
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - script: |
+        docker run --rm \
+          -v $(System.DefaultWorkingDirectory):/zap/wrk:rw \
+          ghcr.io/zaproxy/zaproxy:stable \
+          zap-baseline.py \
+          -t $(ZAP_TARGET_URL) \
+          -r zap-report.html \
+          -x zap-report.xml \
+          -I
+      displayName: ZAP Baseline Scan
+
+    - task: PublishPipelineArtifact@1
+      condition: always()
+      inputs:
+        targetPath: zap-report.html
+        artifact: zap-report
+
+# ── Stage 5: Deploy to Dev ────────────────────────────────────────────────────
+- stage: Deploy_Dev
+  displayName: "Deploy → Dev"
+  dependsOn: CodeQuality
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+
+  - deployment: DeployDev
+    displayName: "Deploy to Dev App Services"
+    environment: dev
+    pool:
+      vmImage: ubuntu-latest
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebAppContainer@1
+            displayName: Deploy API to Dev
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appName: $(apiAppNameDev)
+              resourceGroupName: $(resourceGroupDev)
+              containers: $(containerRegistry)/$(apiImageName):$(Build.BuildId)
+
+          - task: AzureWebAppContainer@1
+            displayName: Deploy Web App to Dev
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appName: $(webAppNameDev)
+              resourceGroupName: $(resourceGroupDev)
+              containers: $(containerRegistry)/$(webImageName):$(Build.BuildId)
+
+# ── Stage 6: E2E Tests (Playwright) ──────────────────────────────────────────
+- stage: E2ETests
+  displayName: "Playwright E2E (Dev)"
+  dependsOn: Deploy_Dev
+  jobs:
+
+  - job: PlaywrightTests
+    displayName: "Run Playwright Tests"
+    pool:
+      vmImage: ubuntu-latest
+    steps:
+    - task: NodeTool@0
+      inputs:
+        versionSpec: $(nodeVersion)
+
+    - script: |
+        npm ci
+        npx playwright install --with-deps chromium
+        npx playwright test --reporter=html
+      workingDirectory: tests/e2e
+      displayName: Run Playwright
+      env:
+        BASE_URL: $(DEV_WEB_URL)
+        OKTA_USERNAME: $(E2E_USERNAME)
+        OKTA_PASSWORD: $(E2E_PASSWORD)
+
+    - task: PublishPipelineArtifact@1
+      condition: always()
+      inputs:
+        targetPath: tests/e2e/playwright-report
+        artifact: playwright-report
+
+# ── Stage 7: Deploy to Production (Manual Gate) ──────────────────────────────
+- stage: Deploy_Prod
+  displayName: "Deploy → Production"
+  dependsOn: [E2ETests, SecurityScan]
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+
+  - deployment: DeployProd
+    displayName: "Deploy to Production App Services"
+    environment: production   # Requires manual approval in Azure DevOps Environment
+    pool:
+      vmImage: ubuntu-latest
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebAppContainer@1
+            displayName: Deploy API to Production
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appName: $(apiAppNameProd)
+              resourceGroupName: $(resourceGroupProd)
+              containers: $(containerRegistry)/$(apiImageName):$(Build.BuildId)
+
+          - task: AzureWebAppContainer@1
+            displayName: Deploy Web App to Production
+            inputs:
+              azureSubscription: $(azureSubscription)
+              appName: $(webAppNameProd)
+              resourceGroupName: $(resourceGroupProd)
+              containers: $(containerRegistry)/$(webImageName):$(Build.BuildId)
+
+          # Swap deployment slots if configured
+          - task: AzureAppServiceManage@0
+            displayName: Swap Slots (Staging → Production)
+            condition: eq(variables['USE_SLOT_SWAP'], 'true')
+            inputs:
+              azureSubscription: $(azureSubscription)
+              Action: Swap Slots
+              WebAppName: $(apiAppNameProd)
+              ResourceGroupName: $(resourceGroupProd)
+              SourceSlot: staging
