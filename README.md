@@ -32,19 +32,19 @@ NGR follows a three-tier architecture deployed on Microsoft Azure:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        Azure Front Door + WAF                    │
-│                    (optional, production only)                    │
+│                        Azure Front Door + WAF                   │
+│                    (optional, production only)                  │
 └────────────────┬─────────────────────────┬──────────────────────┘
                  │                         │
     ┌────────────▼──────────┐  ┌───────────▼──────────┐
-    │   Azure App Service   │  │   Azure App Service   │
-    │   (React 18 SPA)      │  │   (ASP.NET Core 8)    │
-    │   Node 20 / nginx     │  │   .NET 8 Runtime      │
-    │   Port 8080            │  │   Port 8080            │
-    │   Subnet: Web         │  │   Subnet: API          │
-    └───────────────────────┘  └──────────┬────────────┘
+    │   Azure App Service   │  │   Azure App Service  │
+    │   (React 18 SPA)      │  │   (ASP.NET Core 8)   │
+    │   Node 20 / nginx     │  │   .NET 8 Runtime     │
+    │   Port 8080           │  │   Port 8080          │
+    │   Subnet: Web         │  │   Subnet: API        │
+    └───────────────────────┘  └──────────┬───────────┘
                                           │
-                               ┌──────────▼────────────┐
+                               ┌──────────▼─────────────┐
                                │   Azure SQL Database   │
                                │   EF Core 8 / T-SQL    │
                                │   Subnet: Data         │
