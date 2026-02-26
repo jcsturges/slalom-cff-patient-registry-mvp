@@ -449,7 +449,27 @@ Sign up at [developer.okta.com](https://developer.okta.com/) if you don't have a
    - **Value type:** Groups
    - **Filter:** Matches regex `.*`
 
-### 4. Create Test Users with Roles
+### 4. Add an Access Policy to the Authorization Server
+
+> **Required — without this step login will fail with "Policy evaluation failed / access_denied".**
+
+1. Go to **Security** → **API** → **Authorization Servers** → select your server (e.g. `default`)
+2. Click the **Access Policies** tab
+3. Click **Add Policy**:
+   - **Name:** `NGR Local Dev` (or any name)
+   - **Assign to:** select your NGR application
+4. Click **Add Rule** inside the new policy:
+   - **Grant type:** Authorization Code
+   - **User is:** Any user assigned the app
+   - Leave all other defaults
+5. Save
+
+### 5. Assign Users to the Application
+
+1. Go to **Applications** → your NGR app → **Assignments** tab
+2. Click **Assign → Assign to People** and add each user who needs access
+
+### 6. Create Test Users with Roles
 
 Create users and assign them to groups matching the four RBAC roles:
 
@@ -458,7 +478,7 @@ Create users and assign them to groups matching the four RBAC roles:
 - `ProgramAdmin`
 - `ClinicalUser`
 
-### 5. Configure Your Environment
+### 7. Configure Your Environment
 
 Use the values from steps 2-3 to populate:
 
