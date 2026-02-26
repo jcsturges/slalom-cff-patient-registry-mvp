@@ -114,7 +114,7 @@ export function PatientFormPage() {
     if (!values.firstName.trim()) errs.firstName = 'Required';
     if (!values.lastName.trim()) errs.lastName = 'Required';
     if (!values.dateOfBirth) errs.dateOfBirth = 'Required';
-    if (!isEdit && (!values.careProgramId || isNaN(Number(values.careProgramId)))) {
+    if (!isEdit && values.careProgramId && isNaN(Number(values.careProgramId))) {
       errs.careProgramId = 'Must be a valid number';
     }
     setFieldErrors(errs);
@@ -145,7 +145,7 @@ export function PatientFormPage() {
         gender: values.gender || undefined,
         email: values.email || undefined,
         phone: values.phone || undefined,
-        careProgramId: Number(values.careProgramId),
+        careProgramId: values.careProgramId ? Number(values.careProgramId) : undefined,
       });
     }
   };
@@ -263,13 +263,12 @@ export function PatientFormPage() {
               <TextField
                 label="Care Program ID"
                 fullWidth
-                required={!isEdit}
                 type="number"
                 disabled={isEdit}
                 value={values.careProgramId}
                 onChange={setField('careProgramId')}
                 error={!!fieldErrors.careProgramId}
-                helperText={fieldErrors.careProgramId ?? (isEdit ? undefined : 'Numeric program ID')}
+                helperText={fieldErrors.careProgramId ?? (isEdit ? undefined : 'Optional — leave blank to assign later')}
               />
             </Grid>
             <Grid item xs={12} sm={6}>

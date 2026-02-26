@@ -22,7 +22,7 @@ export interface CreatePatientDto {
   gender?: string;
   email?: string;
   phone?: string;
-  careProgramId: number;
+  careProgramId?: number;
 }
 
 export interface UpdatePatientDto {

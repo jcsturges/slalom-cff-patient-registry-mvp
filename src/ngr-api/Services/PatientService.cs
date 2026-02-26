@@ -129,10 +129,32 @@ public class PatientService : IPatientService
     {
         try
         {
-            var careProgram = await _context.CarePrograms.FindAsync(createPatientDto.CareProgramId);
-            if (careProgram == null)
+            CareProgram careProgram;
+            if (createPatientDto.CareProgramId.HasValue)
             {
-                throw new ArgumentException($"Care program with ID {createPatientDto.CareProgramId} not found");
+                var found = await _context.CarePrograms.FindAsync(createPatientDto.CareProgramId.Value);
+                if (found == null)
+                    throw new ArgumentException($"Care program with ID {createPatientDto.CareProgramId} not found");
+                careProgram = found;
+            }
+            else
+            {
+                // Find or create a default "Unassigned" care program
+                careProgram = await _context.CarePrograms
+                    .FirstOrDefaultAsync(c => c.Code == "UNASSIGNED")
+                    ?? new CareProgram
+                    {
+                        Code = "UNASSIGNED",
+                        Name = "Unassigned",
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                if (careProgram.Id == 0)
+                {
+                    _context.CarePrograms.Add(careProgram);
+                    await _context.SaveChangesAsync();
+                }
             }
 
             var patient = new Patient
@@ -146,7 +168,7 @@ public class PatientService : IPatientService
                 Email = createPatientDto.Email,
                 Phone = createPatientDto.Phone,
                 Status = "Active",
-                CareProgramId = createPatientDto.CareProgramId,
+                CareProgramId = careProgram.Id,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow,
                 CreatedBy = createdBy,

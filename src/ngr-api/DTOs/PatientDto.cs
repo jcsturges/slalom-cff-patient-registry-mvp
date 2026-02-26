@@ -32,7 +32,7 @@ public class CreatePatientDto
     public string? Gender { get; set; }
     public string? Email { get; set; }
     public string? Phone { get; set; }
-    public int CareProgramId { get; set; }
+    public int? CareProgramId { get; set; }
 }
 
 /// <summary>

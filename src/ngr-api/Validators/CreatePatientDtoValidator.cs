@@ -27,6 +27,7 @@ public class CreatePatientDtoValidator : AbstractValidator<CreatePatientDto>
             .WithMessage("Invalid email address format");
 
         RuleFor(x => x.CareProgramId)
-            .GreaterThan(0).WithMessage("Care program ID must be greater than 0");
+            .GreaterThan(0).When(x => x.CareProgramId.HasValue)
+            .WithMessage("Care program ID must be greater than 0");
     }
 }
