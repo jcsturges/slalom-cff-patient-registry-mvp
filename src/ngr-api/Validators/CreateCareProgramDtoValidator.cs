@@ -5,9 +5,6 @@ namespace NgrApi.Validators;
 
 public class CreateCareProgramDtoValidator : AbstractValidator<CreateCareProgramDto>
 {
-    private static readonly string[] ValidProgramTypes =
-        ["Pediatric", "Adult", "Affiliate", "Orphaned-Record Holding", "Training"];
-
     public CreateCareProgramDtoValidator()
     {
         RuleFor(x => x.ProgramId)
@@ -23,7 +20,7 @@ public class CreateCareProgramDtoValidator : AbstractValidator<CreateCareProgram
 
         RuleFor(x => x.ProgramType)
             .NotEmpty().WithMessage("Program type is required")
-            .Must(t => ValidProgramTypes.Contains(t))
+            .Must(t => ProgramConstants.ValidProgramTypes.Contains(t))
             .WithMessage("Program type must be one of: Pediatric, Adult, Affiliate, Orphaned-Record Holding, Training");
 
         RuleFor(x => x.City)
@@ -43,9 +40,6 @@ public class CreateCareProgramDtoValidator : AbstractValidator<CreateCareProgram
 
 public class UpdateCareProgramDtoValidator : AbstractValidator<UpdateCareProgramDto>
 {
-    private static readonly string[] ValidProgramTypes =
-        ["Pediatric", "Adult", "Affiliate", "Orphaned-Record Holding", "Training"];
-
     public UpdateCareProgramDtoValidator()
     {
         RuleFor(x => x.Name)
@@ -54,7 +48,7 @@ public class UpdateCareProgramDtoValidator : AbstractValidator<UpdateCareProgram
 
         RuleFor(x => x.ProgramType)
             .NotEmpty().WithMessage("Program type is required")
-            .Must(t => ValidProgramTypes.Contains(t))
+            .Must(t => ProgramConstants.ValidProgramTypes.Contains(t))
             .WithMessage("Program type must be one of: Pediatric, Adult, Affiliate, Orphaned-Record Holding, Training");
 
         RuleFor(x => x.City)

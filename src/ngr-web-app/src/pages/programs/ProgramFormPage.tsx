@@ -25,15 +25,7 @@ import {
 import { programsService } from '../../services/programs';
 import type { CreateCareProgramDto, UpdateCareProgramDto } from '../../types';
 import { useRoles } from '../../hooks/useRoles';
-
-const PROGRAM_TYPES = ['Pediatric', 'Adult', 'Affiliate', 'Training'];
-
-const US_STATES = [
-  'AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA',
-  'KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ',
-  'NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT',
-  'VA','WA','WV','WI','WY','DC',
-];
+import { US_STATES, PROGRAM_TYPES } from '../../constants';
 
 interface FormValues {
   programId: string;
