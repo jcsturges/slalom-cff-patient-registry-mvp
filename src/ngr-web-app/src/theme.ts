@@ -1,81 +1,117 @@
+import '@fontsource/source-sans-3/400.css';
+import '@fontsource/source-sans-3/600.css';
+import '@fontsource/source-sans-3/700.css';
 import { createTheme } from '@mui/material/styles';
+
+const fontFamily = "'Source Sans 3', sans-serif";
 
 export const theme = createTheme({
   palette: {
     primary: {
-      main: '#1976d2',
-      light: '#42a5f5',
-      dark: '#1565c0',
+      main: '#003B71',
+      light: '#005DA8',
     },
     secondary: {
-      main: '#9c27b0',
-      light: '#ba68c8',
-      dark: '#7b1fa2',
+      main: '#F5A623',
     },
     error: {
-      main: '#d32f2f',
-    },
-    warning: {
-      main: '#ed6c02',
-    },
-    info: {
-      main: '#0288d1',
+      main: '#D32F2F',
     },
     success: {
-      main: '#2e7d32',
+      main: '#2E7D32',
     },
     background: {
-      default: '#f5f5f5',
-      paper: '#ffffff',
+      default: '#FFFFFF',
+      paper: '#F4F7FA',
+    },
+    text: {
+      primary: '#1A1A2E',
+      secondary: '#4A5568',
     },
   },
   typography: {
-    fontFamily: [
-      '-apple-system',
-      'BlinkMacSystemFont',
-      '"Segoe UI"',
-      'Roboto',
-      '"Helvetica Neue"',
-      'Arial',
-      'sans-serif',
-    ].join(','),
-    h1: {
-      fontSize: '2.5rem',
-      fontWeight: 500,
-    },
-    h2: {
-      fontSize: '2rem',
-      fontWeight: 500,
-    },
-    h3: {
-      fontSize: '1.75rem',
-      fontWeight: 500,
-    },
-    h4: {
-      fontSize: '1.5rem',
-      fontWeight: 500,
-    },
-    h5: {
-      fontSize: '1.25rem',
-      fontWeight: 500,
-    },
-    h6: {
-      fontSize: '1rem',
-      fontWeight: 500,
-    },
+    fontFamily,
+    fontSize: 16,
+    h1: { fontFamily, fontWeight: 700 },
+    h2: { fontFamily, fontWeight: 700 },
+    h3: { fontFamily, fontWeight: 700 },
+    h4: { fontFamily, fontWeight: 600 },
+    h5: { fontFamily, fontWeight: 600 },
+    h6: { fontFamily, fontWeight: 600 },
+    body1: { fontFamily, fontWeight: 400, lineHeight: 1.6 },
+    body2: { fontFamily, fontWeight: 400, lineHeight: 1.6 },
   },
   components: {
     MuiButton: {
       styleOverrides: {
         root: {
+          borderRadius: 6,
           textTransform: 'none',
         },
+        containedPrimary: {
+          backgroundColor: '#003B71',
+          '&:hover': {
+            backgroundColor: '#005DA8',
+          },
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#003B71',
+          boxShadow: 'none',
+        },
+      },
+    },
+    MuiChip: {
+      defaultProps: {
+        variant: 'outlined',
+        color: 'primary',
       },
     },
     MuiCard: {
       styleOverrides: {
         root: {
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          border: '1px solid #E2E8F0',
+          borderRadius: 8,
+          boxShadow: 'none',
+        },
+      },
+    },
+    // NOTE: When @mui/x-data-grid is added, uncomment MuiDataGrid overrides below
+    // and add `sx` on the DataGrid component's columnHeaders slot:
+    //   sx={{ '& .MuiDataGrid-columnHeaders': { bgcolor: '#003B71', color: '#fff' } }}
+    //
+    // MuiDataGrid: {
+    //   styleOverrides: {
+    //     root: { border: '1px solid #E2E8F0', borderRadius: 8 },
+    //     columnHeaders: {
+    //       backgroundColor: '#003B71', color: '#FFFFFF',
+    //       '& .MuiDataGrid-columnHeaderTitle': { fontWeight: 600 },
+    //     },
+    //     row: { '&:hover': { backgroundColor: '#EBF2FA' } },
+    //   },
+    // },
+
+    // Table overrides (current table components use MUI Table, not DataGrid)
+    MuiTableHead: {
+      styleOverrides: {
+        root: {
+          backgroundColor: '#003B71',
+          '& .MuiTableCell-head': {
+            color: '#FFFFFF',
+            fontWeight: 600,
+          },
+        },
+      },
+    },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          '&.MuiTableRow-hover:hover': {
+            backgroundColor: '#EBF2FA',
+          },
         },
       },
     },

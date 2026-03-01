@@ -87,6 +87,36 @@ iac/runbook.md           # Operations runbook
 
 ---
 
+## Design System (CFF Brand)
+
+The MUI theme (`src/ngr-web-app/src/theme.ts`) implements the CFF visual identity. **All UI work must follow these conventions:**
+
+| Token | Value | Usage |
+|-------|-------|-------|
+| Primary | `#003B71` (deep navy) | AppBar, contained buttons, table headers |
+| Primary light | `#005DA8` | Hover states, links |
+| Secondary / accent | `#F5A623` (warm gold) | Highlights, secondary actions |
+| Background default | `#FFFFFF` | Page background |
+| Background paper | `#F4F7FA` | Cards, panels, drawers |
+| Text primary | `#1A1A2E` | Body text |
+| Text secondary | `#4A5568` | Labels, captions |
+| Error | `#D32F2F` | Error states |
+| Success | `#2E7D32` | Success states |
+| Row hover | `#EBF2FA` | Table row hover |
+| Border | `#E2E8F0` | Card/table borders |
+
+**Typography:** `Source Sans 3` via `@fontsource/source-sans-3`. Headings h1–h3 weight 700, h4–h6 weight 600, body weight 400.
+
+**Component defaults:**
+- Buttons: `borderRadius: 6`, `textTransform: 'none'`
+- AppBar: `#003B71`, no elevation shadow
+- Cards: `border: 1px solid #E2E8F0`, `borderRadius: 8`, no shadow
+- Chips: `variant: 'outlined'`, `color: 'primary'` by default
+- Table headers: navy background (`#003B71`), white text
+- When MUI X DataGrid is added, uncomment the `MuiDataGrid` overrides in `theme.ts` and apply `sx` on column headers
+
+---
+
 ## Local Development
 
 ```bash
