@@ -105,7 +105,7 @@ The MUI theme (`src/ngr-web-app/src/theme.ts`) implements the CFF visual identit
 | Row hover | `#EBF2FA` | Table row hover |
 | Border | `#E2E8F0` | Card/table borders |
 
-**Typography:** `Source Sans 3` via `@fontsource/source-sans-3`. Headings h1–h3 weight 700, h4–h6 weight 600, body weight 400.
+**Typography:** `Montserrat` via `@fontsource/montserrat`. Headings h1–h3 weight 700, h4–h6 weight 600, body weight 400.
 
 **Component defaults:**
 - Buttons: `borderRadius: 6`, `textTransform: 'none'`

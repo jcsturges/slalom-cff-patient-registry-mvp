@@ -1,9 +1,9 @@
-import '@fontsource/source-sans-3/400.css';
-import '@fontsource/source-sans-3/600.css';
-import '@fontsource/source-sans-3/700.css';
+import '@fontsource/montserrat/400.css';
+import '@fontsource/montserrat/600.css';
+import '@fontsource/montserrat/700.css';
 import { createTheme } from '@mui/material/styles';
 
-const fontFamily = "'Source Sans 3', sans-serif";
+const fontFamily = "'Montserrat', sans-serif";
 
 export const theme = createTheme({
   palette: {
