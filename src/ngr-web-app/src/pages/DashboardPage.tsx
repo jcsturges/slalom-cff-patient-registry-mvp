@@ -49,7 +49,7 @@ export function DashboardPage() {
       <Grid container spacing={3}>
         {/* Live patient count */}
         <Grid item xs={12} sm={6} md={3}>
-          <Card>
+          <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 Total Patients
@@ -68,7 +68,7 @@ export function DashboardPage() {
         {/* Placeholder stat cards */}
         {PLACEHOLDER_STATS.map((stat) => (
           <Grid item xs={12} sm={6} md={3} key={stat.label}>
-            <Card>
+            <Card sx={{ height: '100%' }}>
               <CardContent>
                 <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                   {stat.label}
