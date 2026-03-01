@@ -74,6 +74,8 @@ iac/runbook.md           # Operations runbook
 - **Namespaces:** All C# code uses `NgrApi.*` (e.g., `NgrApi.Models`, `NgrApi.Services`). **Not** `NGR.Api.*`.
 - **Database schema:** SQL migration scripts use the `ngr` schema. The EF Core `ApplicationDbContext` uses `dbo`. In local dev, `EnsureCreated()` auto-creates tables in `dbo`.
 - **Auth flow:** Okta OIDC → JWT Bearer tokens. 4 roles: `SystemAdmin`, `FoundationAnalyst`, `ProgramAdmin`, `ClinicalUser`.
+- **Session management:** `api.ts` detects 401 responses and redirects to Okta login with `originalUri`. `useSessionMonitor` hook listens to tokenManager `expired`/`error` events for proactive detection. Both preserve the current URL for post-login restore.
+- **User sync:** `POST /api/auth/sync` (`AuthController.cs`) upserts user profile from JWT claims on login. Called by `useUserSync` hook in `Layout.tsx`.
 - **Form engine:** Dynamic eCRF rendering from JSON schema definitions stored in the `FormDefinitions` table.
 - **CORS:** Configured via `Cors:AllowedOrigins` in appsettings.
 - **Secrets:** All connection strings and credentials go through Azure Key Vault. Local dev uses User Secrets or docker-compose environment variables.

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
@@ -37,13 +37,34 @@ function formatDate(iso: string) {
 
 export function PatientListPage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const { canCreatePatient, canEditPatient, canDeactivatePatient } = useRoles();
 
-  const [page, setPage] = useState(0); // 0-indexed for MUI TablePagination
+  // Initialize from URL query params so state survives re-login redirects
+  const [page, setPage] = useState(() => {
+    const p = searchParams.get('page');
+    return p ? Math.max(0, parseInt(p, 10) - 1) : 0;
+  });
   const [pageSize] = useState(50);
-  const [search, setSearch] = useState('');
-  const [status, setStatus] = useState('');
+  const [search, setSearch] = useState(() => searchParams.get('search') ?? '');
+  const [status, setStatus] = useState(() => searchParams.get('status') ?? '');
+
+  // Sync filters back to URL
+  const syncSearchParams = useCallback(
+    (s: string, st: string, p: number) => {
+      const params: Record<string, string> = {};
+      if (s) params.search = s;
+      if (st) params.status = st;
+      if (p > 0) params.page = String(p + 1); // URL uses 1-indexed
+      setSearchParams(params, { replace: true });
+    },
+    [setSearchParams],
+  );
+
+  useEffect(() => {
+    syncSearchParams(search, status, page);
+  }, [search, status, page, syncSearchParams]);
 
   const { data: patients = [], isLoading, error } = useQuery({
     queryKey: ['patients', { page: page + 1, pageSize, search, status }],

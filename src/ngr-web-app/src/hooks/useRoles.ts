@@ -21,6 +21,8 @@ export interface Roles {
   canDeactivatePatient: boolean;
   /** Foundation-level read access */
   canAccessReports: boolean;
+  /** Foundation admin (FoundationAnalyst or SystemAdmin) — for nav gating */
+  isFoundationAdmin: boolean;
   /** Full system access */
   isSystemAdmin: boolean;
 }
@@ -41,6 +43,7 @@ export function useRoles(): Roles {
     canEditPatient:      satisfies('ClinicalUser'),
     canDeactivatePatient: satisfies('ProgramAdmin'),
     canAccessReports:    satisfies('FoundationAnalyst'),
+    isFoundationAdmin:   satisfies('FoundationAnalyst'),
     isSystemAdmin:       satisfies('SystemAdmin'),
   };
 }

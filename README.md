@@ -61,7 +61,11 @@ NGR follows a three-tier architecture deployed on Microsoft Azure:
 
 **Network topology:** A single VNet (`10.0.0.0/16`) with three subnets — Web (`10.0.1.0/24`), API (`10.0.2.0/24`), and Data (`10.0.3.0/24`). The API subnet has App Service delegation; the Data subnet uses service endpoints for SQL.
 
-**Authentication flow:** Users authenticate via Okta OIDC (PKCE). The React SPA obtains a JWT access token and passes it as a Bearer token to the API. The API validates the token against Okta's authorization server and enforces role-based access control (RBAC) with four roles:
+**Authentication flow:** Users authenticate via Okta OIDC (PKCE). The React SPA obtains a JWT access token and passes it as a Bearer token to the API. The API validates the token against Okta's authorization server and enforces role-based access control (RBAC) with four roles.
+
+**Session management:** The SPA detects expired tokens via two mechanisms: (1) API responses returning 401 trigger an automatic redirect to Okta login, and (2) the `useSessionMonitor` hook subscribes to Okta `tokenManager` events (`expired`, `error`) for proactive detection. In both cases, the current URL (including query params) is preserved via `originalUri` so the user returns to their exact page after re-authentication. A snackbar notification briefly informs the user before the redirect. Patient list filters (search, status, page) are synced to URL query params so they survive re-login.
+
+**User sync:** On each login, the SPA calls `POST /api/auth/sync` to upsert the user's profile (from JWT claims) into the local database, enabling local user management and audit trails.
 
 | Role | Inherits From | Permissions |
 |------|--------------|-------------|
@@ -692,7 +696,7 @@ The full OpenAPI 3.0 specification is at [`architecture/api_specs/api.yaml`](arc
 
 | Tag | Endpoints | Description |
 |-----|-----------|-------------|
-| Authentication | `/auth/*` | User info, session management |
+| Authentication | `/auth/*` | User sync (`POST /api/auth/sync`), session management |
 | Patients | `/patients/*` | Roster CRUD, search, transfer, merge |
 | Encounters | `/encounters/*` | Encounter lifecycle management |
 | Forms | `/forms/*` | eCRF definitions, submissions, auto-save |

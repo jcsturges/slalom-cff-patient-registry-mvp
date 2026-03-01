@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useOktaAuth } from '@okta/okta-react';
 import {
+  Alert,
   AppBar,
   Avatar,
   Box,
@@ -14,9 +15,12 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Snackbar,
   Toolbar,
   Typography,
 } from '@mui/material';
+import { useSessionMonitor } from '../hooks/useSessionMonitor';
+import { useUserSync } from '../hooks/useUserSync';
 
 const DRAWER_WIDTH = 220;
 
@@ -33,6 +37,8 @@ export function Layout() {
   const location = useLocation();
   const { oktaAuth, authState } = useOktaAuth();
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const { sessionExpired } = useSessionMonitor();
+  useUserSync();
 
   const claims = authState?.idToken?.claims as Record<string, unknown> | undefined;
   const firstName = (claims?.given_name as string | undefined) ?? '';
@@ -127,6 +133,13 @@ export function Layout() {
         <Toolbar /> {/* spacer under AppBar */}
         <Outlet />
       </Box>
+
+      {/* ── Session expiry notification ────────────────────────────────── */}
+      <Snackbar open={sessionExpired} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="warning" variant="filled">
+          Your session has expired. Redirecting to login...
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
