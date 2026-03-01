@@ -4,8 +4,12 @@
   },
   "permissions": {
     "allow": [
+      "Bash(cd */src/ngr-api/* && dotnet build *)",
+      "Bash(cd */src/ngr-web-app/* && npx tsc *)",
       "Bash(docker-compose *)",
-      "Bash(ls *)"
+      "Bash(dotnet build *)",
+      "Bash(ls *)",
+      "Bash(npx tsc *)"
     ]
   }
 }

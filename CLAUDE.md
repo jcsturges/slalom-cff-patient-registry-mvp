@@ -76,6 +76,9 @@ iac/runbook.md           # Operations runbook
 - **Auth flow:** Okta OIDC → JWT Bearer tokens. 4 roles: `SystemAdmin`, `FoundationAnalyst`, `ProgramAdmin`, `ClinicalUser`.
 - **Session management:** `api.ts` detects 401 responses and redirects to Okta login with `originalUri`. `useSessionMonitor` hook listens to tokenManager `expired`/`error` events for proactive detection. Both preserve the current URL for post-login restore.
 - **User sync:** `POST /api/auth/sync` (`AuthController.cs`) upserts user profile from JWT claims on login. Called by `useUserSync` hook in `Layout.tsx`.
+- **Care Programs:** `ProgramsController` (FoundationAnalyst policy) — POST/GET/PUT, no DELETE (programs are deactivated, never deleted). `ProgramId` is an immutable, manually-assigned integer. ORH program (ID 3000) is seeded automatically. Training programs have `IsTrainingProgram` flag for analytics exclusion.
+- **Program-User Associations:** `UserProgramRole` model tracks per-program role assignments with `Status` (Active/Deactivated). Foundation Admins manage via Programs UI.
+- **Audit logging:** `AuditService.LogActionAsync()` records entity changes with old/new values, timestamp, acting user. Used by `ProgramService` for create/update/deactivate events.
 - **Form engine:** Dynamic eCRF rendering from JSON schema definitions stored in the `FormDefinitions` table.
 - **CORS:** Configured via `Cors:AllowedOrigins` in appsettings.
 - **Secrets:** All connection strings and credentials go through Azure Key Vault. Local dev uses User Secrets or docker-compose environment variables.

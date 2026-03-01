@@ -21,16 +21,25 @@ import {
 } from '@mui/material';
 import { useSessionMonitor } from '../hooks/useSessionMonitor';
 import { useUserSync } from '../hooks/useUserSync';
+import { useRoles } from '../hooks/useRoles';
 
 const DRAWER_WIDTH = 220;
 
-const NAV_ITEMS = [
+interface NavItem {
+  label: string;
+  path: string;
+  soon?: boolean;
+  requireFoundationAdmin?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', path: '/' },
   { label: 'Patients', path: '/patients' },
+  { label: 'Programs', path: '/programs', requireFoundationAdmin: true },
   { label: 'Forms', path: '/forms', soon: true },
   { label: 'Reports', path: '/reports', soon: true },
   { label: 'Import', path: '/import', soon: true },
-] as const;
+];
 
 export function Layout() {
   const navigate = useNavigate();
@@ -39,6 +48,11 @@ export function Layout() {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const { sessionExpired } = useSessionMonitor();
   useUserSync();
+  const { isFoundationAdmin } = useRoles();
+
+  const visibleNavItems = NAV_ITEMS.filter(
+    (item) => !item.requireFoundationAdmin || isFoundationAdmin,
+  );
 
   const claims = authState?.idToken?.claims as Record<string, unknown> | undefined;
   const firstName = (claims?.given_name as string | undefined) ?? '';
@@ -97,7 +111,7 @@ export function Layout() {
       >
         <Toolbar /> {/* spacer under AppBar */}
         <List disablePadding>
-          {NAV_ITEMS.map((item) => {
+          {visibleNavItems.map((item) => {
             const selected =
               item.path === '/'
                 ? location.pathname === '/'
@@ -106,7 +120,7 @@ export function Layout() {
               <ListItemButton
                 key={item.path}
                 selected={selected}
-                disabled={'soon' in item && item.soon}
+                disabled={!!item.soon}
                 onClick={() => navigate(item.path)}
                 sx={{ py: 1.5, px: 3 }}
               >
@@ -114,7 +128,7 @@ export function Layout() {
                   primary={item.label}
                   primaryTypographyProps={{ fontWeight: selected ? 600 : 400 }}
                 />
-                {'soon' in item && item.soon && (
+                {item.soon && (
                   <Chip
                     label="Soon"
                     size="small"

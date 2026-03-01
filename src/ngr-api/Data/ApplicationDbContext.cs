@@ -180,9 +180,12 @@ public class ApplicationDbContext : DbContext
         {
             entity.ToTable("CarePrograms");
             entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ProgramId).IsUnique();
             entity.HasIndex(e => e.Code).IsUnique();
+            entity.Property(e => e.ProgramId).IsRequired();
             entity.Property(e => e.Code).HasMaxLength(20).IsRequired();
             entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.ProgramType).HasMaxLength(50).IsRequired().HasDefaultValue("Adult");
             entity.Property(e => e.City).HasMaxLength(100);
             entity.Property(e => e.State).HasMaxLength(2);
             entity.Property(e => e.Address1).HasMaxLength(200);
@@ -191,6 +194,24 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Phone).HasMaxLength(20);
             entity.Property(e => e.Email).HasMaxLength(255);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsOrphanHoldingProgram).HasDefaultValue(false);
+            entity.Property(e => e.IsTrainingProgram).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Ignore(e => e.DisplayTitle); // Calculated, not stored
+
+            // Seed the Orphaned Record Holding program (02-004)
+            entity.HasData(new CareProgram
+            {
+                Id = 1,
+                ProgramId = 3000,
+                Code = "ORH",
+                Name = "Orphaned Record Holding",
+                ProgramType = "Orphaned-Record Holding",
+                IsActive = true,
+                IsOrphanHoldingProgram = true,
+                IsTrainingProgram = false,
+                CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            });
         });
 
         // User Configuration
@@ -224,7 +245,10 @@ public class ApplicationDbContext : DbContext
             entity.ToTable("UserProgramRoles");
             entity.HasKey(e => e.Id);
             entity.HasIndex(e => new { e.UserId, e.ProgramId, e.RoleId }).IsUnique();
+            entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("Active");
             entity.Property(e => e.AssignedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.AssignedBy).HasMaxLength(255);
+            entity.Property(e => e.DeactivatedBy).HasMaxLength(255);
 
             entity.HasOne(e => e.User)
                   .WithMany(u => u.ProgramRoles)

@@ -9,8 +9,11 @@ public class UserProgramRole
     public int UserId { get; set; }
     public int ProgramId { get; set; }
     public int RoleId { get; set; }
+    public string Status { get; set; } = "Active";
     public DateTime AssignedAt { get; set; }
     public string AssignedBy { get; set; } = string.Empty;
+    public DateTime? DeactivatedAt { get; set; }
+    public string? DeactivatedBy { get; set; }
 
     // Navigation properties
     public User User { get; set; } = null!;

@@ -697,6 +697,7 @@ The full OpenAPI 3.0 specification is at [`architecture/api_specs/api.yaml`](arc
 | Tag | Endpoints | Description |
 |-----|-----------|-------------|
 | Authentication | `/auth/*` | User sync (`POST /api/auth/sync`), session management |
+| Programs | `/programs/*` | Care program CRUD (Foundation Admin only, no DELETE) |
 | Patients | `/patients/*` | Roster CRUD, search, transfer, merge |
 | Encounters | `/encounters/*` | Encounter lifecycle management |
 | Forms | `/forms/*` | eCRF definitions, submissions, auto-save |

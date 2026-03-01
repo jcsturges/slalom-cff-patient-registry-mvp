@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
+  Autocomplete,
   Box,
   Breadcrumbs,
   Button,
@@ -21,7 +22,8 @@ import {
   Typography,
 } from '@mui/material';
 import { patientsService } from '../../services/patients';
-import type { CreatePatientDto, UpdatePatientDto } from '../../types';
+import { programsService } from '../../services/programs';
+import type { CareProgramDto, CreatePatientDto, UpdatePatientDto } from '../../types';
 import { useRoles } from '../../hooks/useRoles';
 
 interface FormValues {
@@ -57,6 +59,8 @@ export function PatientFormPage() {
 
   const [values, setValues] = useState<FormValues>(EMPTY);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
+  const [selectedProgram, setSelectedProgram] = useState<CareProgramDto | null>(null);
+  const [programSearch, setProgramSearch] = useState('');
 
   // Load existing patient when editing
   const { data: patient, isLoading: loadingPatient } = useQuery({
@@ -64,6 +68,29 @@ export function PatientFormPage() {
     queryFn: () => patientsService.getById(Number(id)),
     enabled: isEdit,
   });
+
+  // Search programs for typeahead (exclude ORH, training, inactive)
+  const { data: programOptions = [] } = useQuery({
+    queryKey: ['programs-lookup', programSearch],
+    queryFn: () =>
+      programsService.getAll({
+        name: programSearch || undefined,
+        pageSize: 20,
+      }),
+  });
+
+  // Load selected program when editing (to show display title)
+  const { data: editProgram } = useQuery({
+    queryKey: ['program', patient?.careProgramId],
+    queryFn: () => programsService.getById(patient!.careProgramId),
+    enabled: isEdit && !!patient?.careProgramId,
+  });
+
+  useEffect(() => {
+    if (editProgram && !selectedProgram) {
+      setSelectedProgram(editProgram);
+    }
+  }, [editProgram, selectedProgram]);
 
   useEffect(() => {
     if (patient) {
@@ -114,9 +141,6 @@ export function PatientFormPage() {
     if (!values.firstName.trim()) errs.firstName = 'Required';
     if (!values.lastName.trim()) errs.lastName = 'Required';
     if (!values.dateOfBirth) errs.dateOfBirth = 'Required';
-    if (!isEdit && values.careProgramId && isNaN(Number(values.careProgramId))) {
-      errs.careProgramId = 'Must be a valid number';
-    }
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -260,15 +284,29 @@ export function PatientFormPage() {
               />
             </Grid>
             <Grid item xs={12} sm={6}>
-              <TextField
-                label="Care Program ID"
-                fullWidth
-                type="number"
+              <Autocomplete
+                options={programOptions}
+                value={selectedProgram}
                 disabled={isEdit}
-                value={values.careProgramId}
-                onChange={setField('careProgramId')}
-                error={!!fieldErrors.careProgramId}
-                helperText={fieldErrors.careProgramId ?? (isEdit ? undefined : 'Optional — leave blank to assign later')}
+                getOptionLabel={(opt) => opt.displayTitle}
+                isOptionEqualToValue={(opt, val) => opt.id === val.id}
+                onInputChange={(_, value) => setProgramSearch(value)}
+                onChange={(_, program) => {
+                  setSelectedProgram(program);
+                  setValues((v) => ({
+                    ...v,
+                    careProgramId: program ? String(program.id) : '',
+                  }));
+                  setFieldErrors((err) => ({ ...err, careProgramId: undefined }));
+                }}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Care Program"
+                    error={!!fieldErrors.careProgramId}
+                    helperText={fieldErrors.careProgramId ?? (isEdit ? undefined : 'Type to search by name')}
+                  />
+                )}
               />
             </Grid>
             <Grid item xs={12} sm={6}>

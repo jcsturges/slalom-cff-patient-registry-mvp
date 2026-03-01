@@ -43,5 +43,16 @@ public class MappingProfile : Profile
             .ForMember(dest => dest.Demographics, opt => opt.Ignore())
             .ForMember(dest => dest.ProgramAssignments, opt => opt.Ignore())
             .ForMember(dest => dest.Encounters, opt => opt.Ignore());
+
+        // CareProgram mappings
+        CreateMap<CareProgram, CareProgramDto>();
+
+        CreateMap<CreateCareProgramDto, CareProgram>()
+            .ForMember(dest => dest.Id, opt => opt.Ignore())
+            .ForMember(dest => dest.IsActive, opt => opt.MapFrom(_ => true))
+            .ForMember(dest => dest.IsOrphanHoldingProgram, opt => opt.MapFrom(_ => false))
+            .ForMember(dest => dest.AccreditationDate, opt => opt.Ignore())
+            .ForMember(dest => dest.CreatedAt, opt => opt.Ignore())  // Set by ProgramService
+            .ForMember(dest => dest.UpdatedAt, opt => opt.Ignore()); // Set by ProgramService
     }
 }
