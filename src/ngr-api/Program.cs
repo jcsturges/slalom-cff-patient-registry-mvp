@@ -133,6 +133,9 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IProgramService, ProgramService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
+builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
+builder.Services.AddScoped<IHelpPageService, HelpPageService>();
+builder.Services.AddScoped<IContactRequestService, ContactRequestService>();
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));

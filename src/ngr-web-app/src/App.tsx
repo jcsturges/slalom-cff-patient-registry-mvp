@@ -6,6 +6,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material';
 import { theme } from './theme';
 import { AppRoutes } from './routes';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { ProgramProvider } from './contexts/ProgramContext';
 import { oktaAuth } from './lib/okta';
 
 const queryClient = new QueryClient({
@@ -31,7 +32,9 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <ThemeProvider theme={theme}>
             <CssBaseline />
-            <AppRoutes />
+            <ProgramProvider>
+              <AppRoutes />
+            </ProgramProvider>
           </ThemeProvider>
         </QueryClientProvider>
       </Security>

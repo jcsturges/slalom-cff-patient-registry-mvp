@@ -84,7 +84,7 @@ Every technology choice is dictated by the CFF RFP and cannot be changed.
 
 | Layer | Technology | Version |
 |-------|-----------|---------|
-| Frontend | React + TypeScript (Vite, Material-UI, React Query) | 18.x |
+| Frontend | React + TypeScript (Vite, Material-UI, React Query, TipTap) | 18.x |
 | API | ASP.NET Core Web API (C# 12) | .NET 8.0 |
 | ORM | Entity Framework Core | 8.0 |
 | Database | Azure SQL Database | — |
@@ -142,10 +142,36 @@ patient-registry-mvp/
 │   │
 │   ├── ngr-web-app/                   #   React 18 TypeScript SPA
 │   │   └── src/
-│   │       ├── App.tsx                #     Root component (Okta, React Query, MUI)
+│   │       ├── App.tsx                #     Root component (Okta, React Query, MUI, ProgramProvider)
 │   │       ├── main.tsx               #     Entry point
-│   │       ├── theme.ts              #     Material-UI theme
-│   │       └── components/            #     UI components
+│   │       ├── routes.tsx             #     Route definitions (auth + unauth)
+│   │       ├── theme.ts              #     Material-UI theme (CFF brand)
+│   │       ├── config/
+│   │       │   └── navigation.ts     #     Role-based nav config (CP vs Foundation Admin)
+│   │       ├── contexts/
+│   │       │   └── ProgramContext.tsx #     Program selection context + localStorage persistence
+│   │       ├── components/            #     UI components
+│   │       │   ├── Layout.tsx         #       Horizontal header + nav bar layout
+│   │       │   ├── GlobalHeader.tsx   #       Auth/unauth header (logo, program, user, logout)
+│   │       │   ├── NavigationBar.tsx  #       Role-based horizontal nav with dropdowns
+│   │       │   ├── DataTable.tsx      #       Reusable list with pagination/search/sort
+│   │       │   ├── Breadcrumbs.tsx    #       Auto-generated breadcrumb trail
+│   │       │   ├── HelpModal.tsx      #       Context-sensitive help overlay
+│   │       │   ├── ContactUsDialog.tsx #      Contact Us form with file attachment
+│   │       │   ├── RichTextEditor.tsx #       TipTap WYSIWYG editor
+│   │       │   ├── SkipNavLink.tsx    #       Accessibility skip-to-main link
+│   │       │   ├── MobileGuard.tsx    #       <768px unsupported device message
+│   │       │   └── AuthGate.tsx       #       Auth/unauth routing gate
+│   │       ├── pages/
+│   │       │   ├── HomePage.tsx       #       Unauthenticated landing page
+│   │       │   ├── DashboardPage.tsx  #       Authenticated dashboard
+│   │       │   └── admin/
+│   │       │       ├── AnnouncementManagerPage.tsx  # WYSIWYG announcement CRUD
+│   │       │       └── HelpPageManagerPage.tsx      # Help page CRUD with hierarchy
+│   │       └── services/
+│   │           ├── announcements.ts   #     Announcement API client
+│   │           ├── helpPages.ts       #     Help page API client
+│   │           └── contact.ts         #     Contact form API client
 │   │
 │   └── ngr-database/                  #   Database project
 │       ├── NgrDbContext.cs            #     EF Core DbContext (21 entities)
@@ -697,6 +723,9 @@ The full OpenAPI 3.0 specification is at [`architecture/api_specs/api.yaml`](arc
 | Tag | Endpoints | Description |
 |-----|-----------|-------------|
 | Authentication | `/auth/*` | User sync (`POST /api/auth/sync`), session management |
+| Announcements | `/announcements/*` | Announcement CRUD, active listing (Foundation Admin) |
+| Help Pages | `/help-pages/*` | Help page CRUD with hierarchy, context keys (Foundation Admin) |
+| Contact | `/contact` | Contact form submission with file attachment |
 | Programs | `/programs/*` | Care program CRUD (Foundation Admin only, no DELETE) |
 | Patients | `/patients/*` | Roster CRUD, search, transfer, merge |
 | Encounters | `/encounters/*` | Encounter lifecycle management |

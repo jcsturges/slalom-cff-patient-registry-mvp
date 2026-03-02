@@ -84,6 +84,16 @@ iac/runbook.md           # Operations runbook
 - **Secrets:** All connection strings and credentials go through Azure Key Vault. Local dev uses User Secrets or docker-compose environment variables.
 - **Logging:** Serilog → Console. Application Insights sink is conditional (only enabled when connection string is configured).
 - **HTTPS redirect:** Disabled in Development mode to avoid redirect loops in Docker.
+- **Navigation layout:** Horizontal header bar (GlobalHeader) + horizontal navigation bar (NavigationBar) — replaces the original left-side Drawer layout. Role-based nav config in `config/navigation.ts`.
+- **Program context:** `ProgramContext` React Context (`contexts/ProgramContext.tsx`) provides selected program state. Last-selected program persisted in localStorage. Available via `useProgram()` hook.
+- **Navigation behavior:** Menu items are **hidden** (not disabled) for unauthorized roles at the navigation level. This is distinct from action buttons which are **disabled with tooltips** (via `RoleGatedButton`).
+- **Help system:** Help pages stored in database with hierarchical structure (`parentId`). Rendered in modal overlay (`HelpModal.tsx`). Context-sensitive via `contextKey` mapping in `HelpModal.tsx`. Managed by Foundation Admins via `HelpPageManagerPage.tsx`.
+- **Announcements:** Foundation Admins manage via `AnnouncementManagerPage.tsx` with TipTap WYSIWYG editor. Active announcements shown on unauthenticated home page. Times in Eastern Time.
+- **Contact Us:** `ContactUsDialog.tsx` auto-populates user info from Okta claims. Supports file attachment (≤5MB). Returns reference ID.
+- **WYSIWYG editor:** `RichTextEditor.tsx` wraps TipTap with MUI toolbar. Supports Bold, Italic, Underline, Strikethrough, H2-H4, bulleted/numbered lists, code blocks, blockquotes, links, images, predefined brand colors.
+- **DataTable:** Reusable `DataTable.tsx` component with pagination (25/50/100), search, sort (asc/desc, respects data types). Supports both client-side and server-side modes.
+- **Responsive design:** Desktop (≥1366px) full horizontal nav, Tablet (768-1365px) hamburger menu, Mobile (<768px) `MobileGuard` blocks with desktop-required message.
+- **Accessibility:** `SkipNavLink` for screen readers, ARIA labels on all nav items, keyboard-navigable table rows, focus management.
 
 ---
 

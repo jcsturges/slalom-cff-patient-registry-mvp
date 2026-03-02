@@ -32,7 +32,49 @@ public class Announcement
     public DateTime? EndDate { get; set; }
     public bool IsActive { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
     public string CreatedBy { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Represents a help page in the hierarchical help system
+/// </summary>
+public class HelpPage
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Slug { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+    public int? ParentId { get; set; }
+    public int SortOrder { get; set; }
+    public bool IsPublished { get; set; }
+    public string? ContextKey { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
+    public string UpdatedBy { get; set; } = string.Empty;
+
+    // Navigation properties
+    public HelpPage? Parent { get; set; }
+    public ICollection<HelpPage> Children { get; set; } = new List<HelpPage>();
+}
+
+/// <summary>
+/// Represents a contact/support request submitted by a user
+/// </summary>
+public class ContactRequest
+{
+    public int Id { get; set; }
+    public string ReferenceId { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string? ProgramNumber { get; set; }
+    public string Subject { get; set; } = string.Empty;
+    public string Message { get; set; } = string.Empty;
+    public string? AttachmentFileName { get; set; }
+    public string? AttachmentBlobPath { get; set; }
+    public string Status { get; set; } = "New";
+    public DateTime CreatedAt { get; set; }
 }
 
 /// <summary>

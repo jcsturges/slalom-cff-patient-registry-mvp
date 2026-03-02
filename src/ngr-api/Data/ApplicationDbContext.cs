@@ -25,6 +25,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<UserProgramRole> UserProgramRoles => Set<UserProgramRole>();
     public DbSet<Content> Contents => Set<Content>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
+    public DbSet<HelpPage> HelpPages => Set<HelpPage>();
+    public DbSet<ContactRequest> ContactRequests => Set<ContactRequest>();
     public DbSet<ImportJob> ImportJobs => Set<ImportJob>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
@@ -291,6 +293,43 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Priority).HasMaxLength(20).IsRequired();
             entity.Property(e => e.TargetAudience).HasMaxLength(50).IsRequired();
             entity.Property(e => e.StartDate).IsRequired();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // HelpPage Configuration
+        modelBuilder.Entity<HelpPage>(entity =>
+        {
+            entity.ToTable("HelpPages");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Slug).IsUnique();
+            entity.Property(e => e.Title).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Slug).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Content).HasColumnType("nvarchar(max)").IsRequired();
+            entity.Property(e => e.ContextKey).HasMaxLength(100);
+            entity.Property(e => e.IsPublished).HasDefaultValue(false);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Parent)
+                  .WithMany(e => e.Children)
+                  .HasForeignKey(e => e.ParentId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ContactRequest Configuration
+        modelBuilder.Entity<ContactRequest>(entity =>
+        {
+            entity.ToTable("ContactRequests");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReferenceId).IsUnique();
+            entity.Property(e => e.ReferenceId).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.Email).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.ProgramNumber).HasMaxLength(20);
+            entity.Property(e => e.Subject).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Message).HasColumnType("nvarchar(max)").IsRequired();
+            entity.Property(e => e.AttachmentFileName).HasMaxLength(500);
+            entity.Property(e => e.AttachmentBlobPath).HasMaxLength(1000);
+            entity.Property(e => e.Status).HasMaxLength(20).IsRequired();
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
 

@@ -1,154 +1,61 @@
 import { useState } from 'react';
-import { useNavigate, useLocation, Outlet } from 'react-router-dom';
-import { useOktaAuth } from '@okta/okta-react';
-import {
-  Alert,
-  AppBar,
-  Avatar,
-  Box,
-  Chip,
-  Divider,
-  Drawer,
-  IconButton,
-  List,
-  ListItemButton,
-  ListItemText,
-  Menu,
-  MenuItem,
-  Snackbar,
-  Toolbar,
-  Typography,
-} from '@mui/material';
+import { Outlet } from 'react-router-dom';
+import { Alert, Box, Snackbar } from '@mui/material';
+import { GlobalHeader } from './GlobalHeader';
+import { NavigationBar } from './NavigationBar';
+import { AppBreadcrumbs } from './Breadcrumbs';
+import { SkipNavLink } from './SkipNavLink';
+import { HelpModal } from './HelpModal';
+import { ContactUsDialog } from './ContactUsDialog';
 import { useSessionMonitor } from '../hooks/useSessionMonitor';
 import { useUserSync } from '../hooks/useUserSync';
-import { useRoles } from '../hooks/useRoles';
 
-const DRAWER_WIDTH = 220;
-
-interface NavItem {
-  label: string;
-  path: string;
-  soon?: boolean;
-  requireFoundationAdmin?: boolean;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', path: '/' },
-  { label: 'Patients', path: '/patients' },
-  { label: 'Programs', path: '/programs', requireFoundationAdmin: true },
-  { label: 'Forms', path: '/forms', soon: true },
-  { label: 'Reports', path: '/reports', soon: true },
-  { label: 'Import', path: '/import', soon: true },
-];
+/** Height of the AppBar + NavigationBar combined */
+const HEADER_HEIGHT = 64;
+const NAV_HEIGHT = 44;
+const TOTAL_TOP_OFFSET = HEADER_HEIGHT + NAV_HEIGHT;
 
 export function Layout() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { oktaAuth, authState } = useOktaAuth();
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const { sessionExpired } = useSessionMonitor();
   useUserSync();
-  const { isFoundationAdmin } = useRoles();
 
-  const visibleNavItems = NAV_ITEMS.filter(
-    (item) => !item.requireFoundationAdmin || isFoundationAdmin,
-  );
-
-  const claims = authState?.idToken?.claims as Record<string, unknown> | undefined;
-  const firstName = (claims?.given_name as string | undefined) ?? '';
-  const lastName = (claims?.family_name as string | undefined) ?? '';
-  const email = (claims?.email as string | undefined) ?? '';
-  const displayName = [firstName, lastName].filter(Boolean).join(' ') || email;
-  const initials = displayName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) || 'U';
-
-  const handleSignOut = () => {
-    setMenuAnchor(null);
-    void oktaAuth.signOut();
-  };
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      {/* ── Top bar ──────────────────────────────────────────────────── */}
-      <AppBar position="fixed" sx={{ zIndex: (t) => t.zIndex.drawer + 1 }}>
-        <Toolbar>
-          <Typography variant="h6" noWrap sx={{ flexGrow: 1 }}>
-            NGR — Patient Registry
-          </Typography>
-          <IconButton onClick={(e) => setMenuAnchor(e.currentTarget)} sx={{ p: 0 }}>
-            <Avatar sx={{ bgcolor: 'secondary.main', width: 34, height: 34, fontSize: '0.8rem' }}>
-              {initials}
-            </Avatar>
-          </IconButton>
-          <Menu
-            anchorEl={menuAnchor}
-            open={Boolean(menuAnchor)}
-            onClose={() => setMenuAnchor(null)}
-          >
-            <MenuItem disabled>
-              <Typography variant="body2" color="text.secondary">
-                {displayName}
-              </Typography>
-            </MenuItem>
-            <Divider />
-            <MenuItem onClick={handleSignOut}>Sign out</MenuItem>
-          </Menu>
-        </Toolbar>
-      </AppBar>
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      <SkipNavLink />
 
-      {/* ── Left nav ─────────────────────────────────────────────────── */}
-      <Drawer
-        variant="permanent"
+      {/* ── Global Header ──────────────────────────────────────── */}
+      <GlobalHeader />
+
+      {/* ── Navigation Bar ─────────────────────────────────────── */}
+      <NavigationBar onHelpClick={() => setHelpOpen(true)} />
+
+      {/* ── Main Content ───────────────────────────────────────── */}
+      <Box
+        component="main"
+        id="main-content"
+        tabIndex={-1}
+        role="main"
         sx={{
-          width: DRAWER_WIDTH,
-          flexShrink: 0,
-          '& .MuiDrawer-paper': { width: DRAWER_WIDTH, boxSizing: 'border-box' },
+          flexGrow: 1,
+          pt: `${TOTAL_TOP_OFFSET + 24}px`,
+          px: 3,
+          pb: 3,
         }}
       >
-        <Toolbar /> {/* spacer under AppBar */}
-        <List disablePadding>
-          {visibleNavItems.map((item) => {
-            const selected =
-              item.path === '/'
-                ? location.pathname === '/'
-                : location.pathname.startsWith(item.path);
-            return (
-              <ListItemButton
-                key={item.path}
-                selected={selected}
-                disabled={!!item.soon}
-                onClick={() => navigate(item.path)}
-                sx={{ py: 1.5, px: 3 }}
-              >
-                <ListItemText
-                  primary={item.label}
-                  primaryTypographyProps={{ fontWeight: selected ? 600 : 400 }}
-                />
-                {item.soon && (
-                  <Chip
-                    label="Soon"
-                    size="small"
-                    variant="outlined"
-                    sx={{ fontSize: '0.6rem', height: 16, px: 0.5 }}
-                  />
-                )}
-              </ListItemButton>
-            );
-          })}
-        </List>
-      </Drawer>
-
-      {/* ── Main content ─────────────────────────────────────────────── */}
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-        <Toolbar /> {/* spacer under AppBar */}
-        <Outlet />
+        <AppBreadcrumbs />
+        <Outlet context={{ openContact: () => setContactOpen(true) }} />
       </Box>
 
-      {/* ── Session expiry notification ────────────────────────────────── */}
+      {/* ── Help Modal ─────────────────────────────────────────── */}
+      <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+
+      {/* ── Contact Us Dialog ──────────────────────────────────── */}
+      <ContactUsDialog open={contactOpen} onClose={() => setContactOpen(false)} />
+
+      {/* ── Session expiry notification ────────────────────────── */}
       <Snackbar open={sessionExpired} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="warning" variant="filled">
           Your session has expired. Redirecting to login...
