@@ -21,7 +21,7 @@ export const CP_NAV_ITEMS: NavItem[] = [
     path: '/patients',
     children: [
       { label: 'Program Roster', path: '/patients' },
-      { label: 'Search Patients', path: '/patients?search=' },
+      { label: 'Merge Duplicates', path: '/patients/merge' },
     ],
   },
   { label: 'User Management', path: '/user-management' },
@@ -39,6 +39,7 @@ export const FOUNDATION_NAV_ITEMS: NavItem[] = [
   { label: 'Help Manager', path: '/admin/help-pages' },
   { label: 'Care Programs', path: '/programs' },
   { label: 'Patient Search', path: '/patients' },
+  { label: 'Merge Duplicates', path: '/patients/merge' },
   { label: 'User Management', path: '/user-management' },
   { label: 'User Analytics', path: '/admin/analytics' },
   { label: 'Reporting', path: '/reports' },

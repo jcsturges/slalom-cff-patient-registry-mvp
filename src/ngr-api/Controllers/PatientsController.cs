@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NgrApi.DTOs;
@@ -5,9 +6,6 @@ using NgrApi.Services;
 
 namespace NgrApi.Controllers;
 
-/// <summary>
-/// Controller for managing patients
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -27,65 +25,57 @@ public class PatientsController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>Get all patients with optional filtering</summary>
+    private (string UserId, string UserEmail) GetUserInfo()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                    ?? User.FindFirstValue("sub") ?? "unknown";
+        var userEmail = User.FindFirstValue(ClaimTypes.Email)
+                       ?? User.FindFirstValue("email")
+                       ?? User.Identity?.Name ?? "unknown";
+        return (userId, userEmail);
+    }
+
+    // ── CRUD Endpoints ───────────────────────────────────────────
+
+    /// <summary>Get patients with optional filtering (program-scoped via associations)</summary>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<PatientDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<IEnumerable<PatientDto>>> GetPatients(
         [FromQuery] int? careProgramId = null,
         [FromQuery] string? status = null,
         [FromQuery] string? searchTerm = null,
         [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 50)
+        [FromQuery] int pageSize = 25)
     {
-        try
-        {
-            var patients = await _patientService.GetPatientsAsync(careProgramId, status, searchTerm, page, pageSize);
-            return Ok(patients);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving patients");
-            return StatusCode(500, "An error occurred while retrieving patients");
-        }
+        var patients = await _patientService.GetPatientsAsync(careProgramId, status, searchTerm, page, pageSize);
+        return Ok(patients);
     }
 
     /// <summary>Get a specific patient by ID</summary>
-    [HttpGet("{id}")]
-    [ProducesResponseType(typeof(PatientDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [HttpGet("{id:int}")]
     public async Task<ActionResult<PatientDto>> GetPatient(int id)
     {
-        try
-        {
-            var patient = await _patientService.GetPatientByIdAsync(id);
-            if (patient == null)
-                return NotFound($"Patient with ID {id} not found");
-            return Ok(patient);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error retrieving patient with ID: {PatientId}", id);
-            return StatusCode(500, "An error occurred while retrieving the patient");
-        }
+        var patient = await _patientService.GetPatientByIdAsync(id);
+        if (patient == null) return NotFound();
+        return Ok(patient);
     }
 
-    /// <summary>Create a new patient</summary>
+    /// <summary>Get patient count, optionally by care program</summary>
+    [HttpGet("count")]
+    public async Task<ActionResult<int>> GetPatientCount([FromQuery] int? careProgramId = null)
+    {
+        var count = await _patientService.GetPatientCountAsync(careProgramId);
+        return Ok(count);
+    }
+
+    /// <summary>Create a new patient (04-004)</summary>
     [HttpPost]
     [Authorize(Policy = "ClinicalUser")]
-    [ProducesResponseType(typeof(PatientDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PatientDto>> CreatePatient([FromBody] CreatePatientDto createPatientDto)
+    public async Task<ActionResult<PatientDto>> CreatePatient([FromBody] CreatePatientDto dto)
     {
         try
         {
-            var userEmail = User.Identity?.Name ?? "Unknown";
-            var userId = User.FindFirst("sub")?.Value ?? "Unknown";
-
-            var patient = await _patientService.CreatePatientAsync(createPatientDto, userEmail);
+            var (userId, userEmail) = GetUserInfo();
+            var patient = await _patientService.CreatePatientAsync(dto, userEmail);
 
             await _auditService.LogActionAsync(
                 "Patient", patient.Id.ToString(), "Create",
@@ -96,105 +86,159 @@ public class PatientsController : ControllerBase
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Invalid patient data");
             return BadRequest(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating patient");
-            return StatusCode(500, "An error occurred while creating the patient");
         }
     }
 
     /// <summary>Update an existing patient</summary>
-    [HttpPut("{id}")]
+    [HttpPut("{id:int}")]
     [Authorize(Policy = "ClinicalUser")]
-    [ProducesResponseType(typeof(PatientDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<ActionResult<PatientDto>> UpdatePatient(int id, [FromBody] UpdatePatientDto updatePatientDto)
+    public async Task<ActionResult<PatientDto>> UpdatePatient(int id, [FromBody] UpdatePatientDto dto)
     {
         try
         {
-            var userEmail = User.Identity?.Name ?? "Unknown";
-            var userId = User.FindFirst("sub")?.Value ?? "Unknown";
+            var (userId, userEmail) = GetUserInfo();
+            var existing = await _patientService.GetPatientByIdAsync(id);
+            if (existing == null) return NotFound();
 
-            var existingPatient = await _patientService.GetPatientByIdAsync(id);
-            if (existingPatient == null)
-                return NotFound($"Patient with ID {id} not found");
-
-            var updatedPatient = await _patientService.UpdatePatientAsync(id, updatePatientDto, userEmail);
+            var updated = await _patientService.UpdatePatientAsync(id, dto, userEmail);
 
             await _auditService.LogActionAsync(
                 "Patient", id.ToString(), "Update",
-                existingPatient, updatedPatient, userId, userEmail,
+                existing, updated, userId, userEmail,
                 HttpContext.Connection.RemoteIpAddress?.ToString());
 
-            return Ok(updatedPatient);
+            return Ok(updated);
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Invalid patient data");
             return BadRequest(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating patient with ID: {PatientId}", id);
-            return StatusCode(500, "An error occurred while updating the patient");
         }
     }
 
     /// <summary>Soft-delete a patient (sets status to Inactive)</summary>
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:int}")]
     [Authorize(Policy = "ProgramAdmin")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeletePatient(int id)
     {
         try
         {
-            var userEmail = User.Identity?.Name ?? "Unknown";
-            var userId = User.FindFirst("sub")?.Value ?? "Unknown";
-
-            var existingPatient = await _patientService.GetPatientByIdAsync(id);
-            if (existingPatient == null)
-                return NotFound($"Patient with ID {id} not found");
+            var (userId, userEmail) = GetUserInfo();
+            var existing = await _patientService.GetPatientByIdAsync(id);
+            if (existing == null) return NotFound();
 
             await _patientService.DeletePatientAsync(id, userEmail);
 
             await _auditService.LogActionAsync(
                 "Patient", id.ToString(), "Delete",
-                existingPatient, null, userId, userEmail,
+                existing, null, userId, userEmail,
                 HttpContext.Connection.RemoteIpAddress?.ToString());
 
             return NoContent();
         }
-        catch (Exception ex)
+        catch (ArgumentException ex)
         {
-            _logger.LogError(ex, "Error deleting patient with ID: {PatientId}", id);
-            return StatusCode(500, "An error occurred while deleting the patient");
+            return BadRequest(ex.Message);
         }
     }
 
-    /// <summary>Get patient count, optionally by care program</summary>
-    [HttpGet("count")]
-    [ProducesResponseType(typeof(int), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<int>> GetPatientCount([FromQuery] int? careProgramId = null)
+    // ── Program Association Endpoints (04-002, 04-006, 04-007) ───
+
+    /// <summary>Get all program associations for a patient</summary>
+    [HttpGet("{id:int}/programs")]
+    public async Task<ActionResult<IEnumerable<PatientProgramAssociationDto>>> GetProgramAssociations(int id)
+    {
+        var associations = await _patientService.GetProgramAssociationsAsync(id);
+        return Ok(associations);
+    }
+
+    /// <summary>Add a patient to a program (re-acquisition from ORH supported)</summary>
+    [HttpPost("{id:int}/programs")]
+    [Authorize(Policy = "ClinicalUser")]
+    public async Task<ActionResult<PatientProgramAssociationDto>> AddToProgram(
+        int id, [FromBody] AddPatientToProgramDto dto)
     {
         try
         {
-            var count = await _patientService.GetPatientCountAsync(careProgramId);
-            return Ok(count);
+            var (userId, userEmail) = GetUserInfo();
+            var result = await _patientService.AddToProgramAsync(id, dto, userEmail);
+
+            await _auditService.LogActionAsync(
+                "PatientProgramAssignment", result.Id.ToString(), "Create",
+                null, result, userId, userEmail,
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            return CreatedAtAction(nameof(GetProgramAssociations), new { id }, result);
         }
-        catch (Exception ex)
+        catch (InvalidOperationException ex)
         {
-            _logger.LogError(ex, "Error retrieving patient count");
-            return StatusCode(500, "An error occurred while retrieving patient count");
+            return Conflict(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    /// <summary>Remove a patient from a program (04-007)</summary>
+    [HttpPost("{id:int}/programs/{programId:int}/remove")]
+    [Authorize(Policy = "ClinicalUser")]
+    public async Task<IActionResult> RemoveFromProgram(
+        int id, int programId, [FromBody] RemovePatientFromProgramDto dto)
+    {
+        try
+        {
+            var (userId, userEmail) = GetUserInfo();
+            await _patientService.RemoveFromProgramAsync(id, programId, dto, userEmail);
+
+            await _auditService.LogActionAsync(
+                "PatientProgramAssignment", $"{id}_{programId}", "Remove",
+                null, new { PatientId = id, ProgramId = programId, dto.RemovalReason },
+                userId, userEmail,
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            return NoContent();
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+    }
+
+    // ── Duplicate Detection Endpoint (04-005) ────────────────────
+
+    /// <summary>Check for duplicate patients before creating a new record</summary>
+    [HttpPost("duplicates")]
+    [Authorize(Policy = "ClinicalUser")]
+    public async Task<ActionResult<IEnumerable<DuplicateMatchDto>>> CheckDuplicates(
+        [FromBody] DuplicateCheckDto dto)
+    {
+        var matches = await _patientService.CheckDuplicatesAsync(dto);
+        return Ok(matches);
+    }
+
+    // ── Merge Endpoints (04-008, 04-009, 04-010) ─────────────────
+
+    /// <summary>Merge two patient records (CP Admin: within-program; Foundation Admin: system-wide)</summary>
+    [HttpPost("merge")]
+    [Authorize(Policy = "ProgramAdmin")]
+    public async Task<ActionResult<MergeResultDto>> MergePatients([FromBody] MergeRequestDto dto)
+    {
+        try
+        {
+            var (userId, userEmail) = GetUserInfo();
+            var result = await _patientService.MergeAsync(dto, userEmail);
+
+            await _auditService.LogActionAsync(
+                "PatientMerge", $"{dto.PrimaryPatientId}_{dto.SecondaryPatientId}", "Merge",
+                null, result, userId, userEmail,
+                HttpContext.Connection.RemoteIpAddress?.ToString());
+
+            return Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
     }
 }

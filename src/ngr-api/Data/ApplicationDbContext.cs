@@ -23,6 +23,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserProgramRole> UserProgramRoles => Set<UserProgramRole>();
+    public DbSet<PatientAlias> PatientAliases => Set<PatientAlias>();
     public DbSet<Content> Contents => Set<Content>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<HelpPage> HelpPages => Set<HelpPage>();
@@ -50,6 +51,14 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Status).HasMaxLength(20).HasDefaultValue("Active");
             entity.Property(e => e.Email).HasMaxLength(255);
             entity.Property(e => e.Phone).HasMaxLength(20);
+            entity.HasIndex(e => e.CffId).IsUnique();
+            entity.Property(e => e.CffId).IsRequired();
+            entity.Property(e => e.LastNameAtBirth).HasMaxLength(100);
+            entity.Property(e => e.BiologicalSexAtBirth).HasMaxLength(20);
+            entity.Property(e => e.SsnLast4).HasMaxLength(4);
+            entity.Property(e => e.Diagnosis).HasMaxLength(500);
+            entity.Property(e => e.VitalStatus).HasMaxLength(20).HasDefaultValue("Alive");
+            entity.Property(e => e.ConsentWithdrawn).HasDefaultValue(false);
             entity.Property(e => e.IsDeceased).HasDefaultValue(false);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
@@ -91,6 +100,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Status).HasMaxLength(20).IsRequired();
             entity.Property(e => e.IsPrimaryProgram).HasDefaultValue(false);
             entity.Property(e => e.EnrollmentDate).IsRequired();
+            entity.Property(e => e.RemovalReason).HasMaxLength(200);
+            entity.Property(e => e.RemovedBy).HasMaxLength(255);
 
             entity.HasOne(e => e.Patient)
                   .WithMany(p => p.ProgramAssignments)
@@ -101,6 +112,22 @@ public class ApplicationDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.ProgramId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // PatientAlias Configuration
+        modelBuilder.Entity<PatientAlias>(entity =>
+        {
+            entity.ToTable("PatientAliases");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.AliasType).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.AliasValue).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Source).HasMaxLength(500);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Patient)
+                  .WithMany(p => p.Aliases)
+                  .HasForeignKey(e => e.PatientId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // Encounter Configuration

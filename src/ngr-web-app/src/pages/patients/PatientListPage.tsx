@@ -1,31 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
-  Alert,
   Box,
   Chip,
-  CircularProgress,
-  FormControl,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  type SelectChangeEvent,
+  Link,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TextField,
   Typography,
 } from '@mui/material';
 import { patientsService } from '../../services/patients';
 import { useRoles } from '../../hooks/useRoles';
+import { useProgram } from '../../contexts/ProgramContext';
 import { RoleGatedButton } from '../../components/RoleGatedButton';
+import { DataTable, type DataTableColumn } from '../../components/DataTable';
+import type { PatientDto } from '../../types';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', {
@@ -35,69 +23,138 @@ function formatDate(iso: string) {
   });
 }
 
+const COLUMNS: DataTableColumn<PatientDto>[] = [
+  {
+    id: 'cffId',
+    label: 'CFF ID',
+    dataType: 'number',
+    minWidth: 90,
+    render: (row) => (
+      <Link component="span" sx={{ cursor: 'pointer', fontWeight: 600 }}>
+        {row.cffId}
+      </Link>
+    ),
+  },
+  { id: 'firstName', label: 'First Name' },
+  { id: 'lastName', label: 'Last Name' },
+  {
+    id: 'dateOfBirth',
+    label: 'DOB',
+    dataType: 'date',
+    render: (row) => formatDate(row.dateOfBirth),
+  },
+  {
+    id: 'biologicalSexAtBirth',
+    label: 'Sex',
+    render: (row) => row.biologicalSexAtBirth ?? row.gender ?? '—',
+  },
+  {
+    id: 'diagnosis',
+    label: 'Diagnosis',
+    render: (row) => row.diagnosis ?? '—',
+  },
+  {
+    id: 'otherPrograms',
+    label: 'Other Programs',
+    sortable: false,
+    render: (row) =>
+      row.otherPrograms && row.otherPrograms.length > 0
+        ? row.otherPrograms.join(', ')
+        : '—',
+  },
+  {
+    id: 'vitalStatus',
+    label: 'Vital Status',
+    render: (row) => (
+      <Chip
+        label={row.vitalStatus}
+        size="small"
+        color={row.vitalStatus === 'Alive' ? 'success' : 'default'}
+        variant="outlined"
+      />
+    ),
+  },
+  {
+    id: 'lastModifiedDate',
+    label: 'Last Modified',
+    dataType: 'date',
+    render: (row) => (
+      <Typography variant="body2" fontSize="0.8rem">
+        {row.lastModifiedDate ? formatDate(row.lastModifiedDate) : '—'}
+        {row.lastModifiedBy && (
+          <Typography component="span" variant="caption" color="text.secondary" display="block">
+            by {row.lastModifiedBy}
+          </Typography>
+        )}
+      </Typography>
+    ),
+  },
+];
+
 export function PatientListPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const queryClient = useQueryClient();
-  const { canCreatePatient, canEditPatient, canDeactivatePatient } = useRoles();
+  const { canCreatePatient } = useRoles();
+  const { selectedProgram } = useProgram();
 
-  // Initialize from URL query params so state survives re-login redirects
+  // Server-side state
   const [page, setPage] = useState(() => {
     const p = searchParams.get('page');
     return p ? Math.max(0, parseInt(p, 10) - 1) : 0;
   });
-  const [pageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(25);
   const [search, setSearch] = useState(() => searchParams.get('search') ?? '');
-  const [status, setStatus] = useState(() => searchParams.get('status') ?? '');
+  const [sortBy, setSortBy] = useState('lastName');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  // Sync filters back to URL
-  const syncSearchParams = useCallback(
-    (s: string, st: string, p: number) => {
+  // Sync to URL
+  const syncParams = useCallback(
+    (s: string, p: number) => {
       const params: Record<string, string> = {};
       if (s) params.search = s;
-      if (st) params.status = st;
-      if (p > 0) params.page = String(p + 1); // URL uses 1-indexed
+      if (p > 0) params.page = String(p + 1);
       setSearchParams(params, { replace: true });
     },
     [setSearchParams],
   );
 
   useEffect(() => {
-    syncSearchParams(search, status, page);
-  }, [search, status, page, syncSearchParams]);
+    syncParams(search, page);
+  }, [search, page, syncParams]);
 
-  const { data: patients = [], isLoading, error } = useQuery({
-    queryKey: ['patients', { page: page + 1, pageSize, search, status }],
+  const programId = selectedProgram?.id;
+
+  const { data: patients = [], isLoading } = useQuery({
+    queryKey: ['patients', 'roster', { programId, page: page + 1, pageSize, search }],
     queryFn: () =>
       patientsService.getAll({
+        careProgramId: programId,
         page: page + 1,
         pageSize,
         searchTerm: search || undefined,
-        status: status || undefined,
       }),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => patientsService.delete(id),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['patients'] }),
-  });
-
-  const handleStatusChange = (e: SelectChangeEvent) => {
-    setStatus(e.target.value);
-    setPage(0);
+  const handleRowClick = (row: PatientDto) => {
+    navigate(`/patients/${row.id}`);
   };
 
-  const handleDeactivate = (e: React.MouseEvent, id: number) => {
-    e.stopPropagation();
-    if (window.confirm('Deactivate this patient? They will be marked as Inactive.')) {
-      deleteMutation.mutate(id);
-    }
+  const handleSortChange = (newSortBy: string, newDir: 'asc' | 'desc') => {
+    setSortBy(newSortBy);
+    setSortDirection(newDir);
   };
 
   return (
     <Box>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h4">Patient Roster</Typography>
+        <Box>
+          <Typography variant="h4">Program Roster</Typography>
+          {selectedProgram && (
+            <Typography variant="body2" color="text.secondary">
+              {selectedProgram.name} ({selectedProgram.programId})
+            </Typography>
+          )}
+        </Box>
         <RoleGatedButton
           variant="contained"
           allowed={canCreatePatient}
@@ -108,120 +165,24 @@ export function PatientListPage() {
         </RoleGatedButton>
       </Stack>
 
-      <Stack direction="row" spacing={2} mb={3}>
-        <TextField
-          label="Search"
-          size="small"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
-          placeholder="Name or MRN..."
-          sx={{ width: 280 }}
-        />
-        <FormControl size="small" sx={{ width: 160 }}>
-          <InputLabel>Status</InputLabel>
-          <Select value={status} label="Status" onChange={handleStatusChange}>
-            <MenuItem value="">All</MenuItem>
-            <MenuItem value="Active">Active</MenuItem>
-            <MenuItem value="Inactive">Inactive</MenuItem>
-          </Select>
-        </FormControl>
-      </Stack>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {(error as Error).message}
-        </Alert>
-      )}
-
-      <TableContainer component={Paper}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Date of Birth</TableCell>
-              <TableCell>MRN</TableCell>
-              <TableCell>Gender</TableCell>
-              <TableCell>Care Program</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell align="right">Actions</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                  <CircularProgress size={28} />
-                </TableCell>
-              </TableRow>
-            ) : patients.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
-                  <Typography color="text.secondary">No patients found</Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              patients.map((patient) => (
-                <TableRow
-                  key={patient.id}
-                  hover
-                  sx={{ cursor: 'pointer' }}
-                  onClick={() => navigate(`/patients/${patient.id}`)}
-                >
-                  <TableCell>
-                    <Typography variant="body2" fontWeight={500}>
-                      {patient.lastName}, {patient.firstName}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>{formatDate(patient.dateOfBirth)}</TableCell>
-                  <TableCell>{patient.medicalRecordNumber ?? '—'}</TableCell>
-                  <TableCell>{patient.gender ?? '—'}</TableCell>
-                  <TableCell>{patient.careProgramName}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={patient.status}
-                      size="small"
-                      color={patient.status === 'Active' ? 'success' : 'default'}
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell align="right">
-                    <RoleGatedButton
-                      size="small"
-                      allowed={canEditPatient}
-                      disabledReason="Requires ClinicalUser role or above to edit patients."
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/patients/${patient.id}/edit`);
-                      }}
-                    >
-                      Edit
-                    </RoleGatedButton>
-                    <RoleGatedButton
-                      size="small"
-                      color="error"
-                      allowed={canDeactivatePatient}
-                      disabledReason="Requires ProgramAdmin role or above to deactivate patients."
-                      disabled={deleteMutation.isPending}
-                      onClick={(e) => handleDeactivate(e, patient.id)}
-                    >
-                      Deactivate
-                    </RoleGatedButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <TablePagination
-        component="div"
-        count={-1}
+      <DataTable
+        columns={COLUMNS}
+        rows={patients}
+        getRowId={(row) => row.id}
+        loading={isLoading}
+        emptyMessage="No patients found in this program."
+        onRowClick={handleRowClick}
+        searchPlaceholder="Search by name, MRN, or CFF ID..."
+        serverSide
         page={page}
-        rowsPerPage={pageSize}
-        rowsPerPageOptions={[50]}
-        onPageChange={(_, newPage) => setPage(newPage)}
-        labelDisplayedRows={({ from, to }) => `${from}–${to}`}
+        pageSize={pageSize}
+        search={search}
+        sortBy={sortBy}
+        sortDirection={sortDirection}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        onSearchChange={setSearch}
+        onSortChange={handleSortChange}
       />
     </Box>
   );

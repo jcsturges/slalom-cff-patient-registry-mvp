@@ -10,6 +10,7 @@ import { PlaceholderPage } from './pages/PlaceholderPage';
 import { PatientListPage } from './pages/patients/PatientListPage';
 import { PatientDetailPage } from './pages/patients/PatientDetailPage';
 import { PatientFormPage } from './pages/patients/PatientFormPage';
+import { MergePatientsPage } from './pages/patients/MergePatientsPage';
 import { ProgramListPage } from './pages/programs/ProgramListPage';
 import { ProgramFormPage } from './pages/programs/ProgramFormPage';
 import { AnnouncementManagerPage } from './pages/admin/AnnouncementManagerPage';
@@ -45,6 +46,7 @@ export function AppRoutes() {
             <Route path="/patients/new" element={<PatientFormPage />} />
             <Route path="/patients/:id" element={<PatientDetailPage />} />
             <Route path="/patients/:id/edit" element={<PatientFormPage />} />
+            <Route path="/patients/merge" element={<MergePatientsPage />} />
             <Route path="/programs" element={<ProgramListPage />} />
             <Route path="/programs/new" element={<ProgramFormPage />} />
             <Route path="/programs/:id/edit" element={<ProgramFormPage />} />

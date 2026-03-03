@@ -1,38 +1,121 @@
 export interface PatientDto {
   id: number;
+  registryId: string;
+  cffId: number;
   firstName: string;
+  middleName: string | null;
   lastName: string;
+  lastNameAtBirth: string | null;
   dateOfBirth: string;
-  medicalRecordNumber: string | null;
+  biologicalSexAtBirth: string | null;
   gender: string | null;
+  medicalRecordNumber: string | null;
   email: string | null;
   phone: string | null;
   status: string;
+  diagnosis: string | null;
+  vitalStatus: string;
   careProgramId: number;
   careProgramName: string;
+  lastModifiedBy: string | null;
+  lastModifiedDate: string | null;
   createdAt: string;
   updatedAt: string;
+  otherPrograms: string[];
 }
 
 export interface CreatePatientDto {
   firstName: string;
+  middleName?: string;
   lastName: string;
+  lastNameAtBirth?: string;
   dateOfBirth: string;
+  biologicalSexAtBirth?: string;
+  ssnLast4?: string;
   medicalRecordNumber?: string;
   gender?: string;
   email?: string;
   phone?: string;
   careProgramId?: number;
+  knownRegistryId?: string;
 }
 
 export interface UpdatePatientDto {
   firstName: string;
+  middleName?: string;
   lastName: string;
+  lastNameAtBirth?: string;
   dateOfBirth: string;
+  biologicalSexAtBirth?: string;
   medicalRecordNumber?: string;
   gender?: string;
   email?: string;
   phone?: string;
+  status: string;
+}
+
+// ── Patient-Program Association types ───────────────────────────
+
+export interface PatientProgramAssociationDto {
+  id: number;
+  patientId: number;
+  programId: number;
+  programName: string;
+  localMRN: string | null;
+  status: string;
+  isPrimaryProgram: boolean;
+  enrollmentDate: string;
+  disenrollmentDate: string | null;
+  removalReason: string | null;
+}
+
+export interface AddPatientToProgramDto {
+  programId: number;
+  localMRN?: string;
+  isPrimaryProgram: boolean;
+}
+
+export interface RemovePatientFromProgramDto {
+  removalReason: string;
+}
+
+// ── Duplicate Detection types ───────────────────────────────────
+
+export interface DuplicateCheckDto {
+  firstName?: string;
+  lastName?: string;
+  dateOfBirth?: string;
+  biologicalSexAtBirth?: string;
+  registryId?: string;
+}
+
+export interface DuplicateMatchDto {
+  patientId: number;
+  registryId: string;
+  cffId: number;
+  firstName: string;
+  lastName: string;
+  lastNameAtBirth: string | null;
+  dateOfBirth: string;
+  biologicalSexAtBirth: string | null;
+  programAssociations: string[];
+  isOrh: boolean;
+  confidenceScore: number;
+  matchReason: string;
+}
+
+// ── Merge types ─────────────────────────────────────────────────
+
+export interface MergeRequestDto {
+  primaryPatientId: number;
+  secondaryPatientId: number;
+}
+
+export interface MergeResultDto {
+  primaryPatientId: number;
+  secondaryPatientId: number;
+  aliasesCreated: number;
+  associationsMerged: number;
   status: string;
 }
 
