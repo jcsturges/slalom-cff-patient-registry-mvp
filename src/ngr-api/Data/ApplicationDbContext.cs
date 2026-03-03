@@ -193,8 +193,11 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Name).HasMaxLength(200).IsRequired();
             entity.Property(e => e.Description).HasMaxLength(1000);
             entity.Property(e => e.Version).IsRequired();
+            entity.Property(e => e.FormType).HasMaxLength(50).IsRequired();
             entity.Property(e => e.EncounterTypeCode).HasMaxLength(50);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.IsShared).HasDefaultValue(false);
+            entity.Property(e => e.AutoComplete).HasDefaultValue(false);
             entity.Property(e => e.SchemaJson).HasColumnType("nvarchar(max)").IsRequired();
             entity.Property(e => e.ValidationRulesJson).HasColumnType("nvarchar(max)");
             entity.Property(e => e.UiSchemaJson).HasColumnType("nvarchar(max)");
@@ -206,8 +209,13 @@ public class ApplicationDbContext : DbContext
         {
             entity.ToTable("FormSubmissions");
             entity.HasKey(e => e.Id);
+            entity.Property(e => e.CompletionStatus).HasMaxLength(20).IsRequired().HasDefaultValue("Incomplete");
+            entity.Property(e => e.LockStatus).HasMaxLength(20).IsRequired().HasDefaultValue("Unlocked");
             entity.Property(e => e.Status).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.LastUpdateSource).HasMaxLength(20).HasDefaultValue("User");
+            entity.Property(e => e.RequiresReview).HasDefaultValue(false);
             entity.Property(e => e.FormDataJson).HasColumnType("nvarchar(max)").IsRequired();
+            entity.Property(e => e.TransplantOrgan).HasMaxLength(100);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
 

@@ -285,11 +285,17 @@ export interface FormSubmissionDto {
   formDefinitionId: number;
   formName: string;
   formCode: string;
+  formType: string;
+  isShared: boolean;
   patientId: number;
   encounterId: number | null;
   programId: number;
   programName: string;
+  completionStatus: string;
+  lockStatus: string;
   status: string;
+  lastUpdateSource: string;
+  requiresReview: boolean;
   createdAt: string;
   updatedAt: string;
   lastModifiedBy: string | null;
@@ -308,6 +314,52 @@ export interface CreateFormSubmissionDto {
   encounterId?: number;
   programId: number;
   formDataJson?: string;
+}
+
+export interface UpdateFormDataDto {
+  formDataJson: string;
+  markComplete: boolean;
+}
+
+export interface FormValidationResultDto {
+  isValid: boolean;
+  canSave: boolean;
+  canComplete: boolean;
+  messages: ValidationMessageDto[];
+}
+
+export interface ValidationMessageDto {
+  severity: 'Warning' | 'CompletionBlocking' | 'SaveBlocking' | 'DependencyChange';
+  fieldId: string;
+  fieldLabel: string;
+  message: string;
+  correctiveAction: string | null;
+}
+
+export interface FormDefinitionDto {
+  id: number;
+  name: string;
+  code: string;
+  description: string | null;
+  formType: string;
+  isShared: boolean;
+  autoComplete: boolean;
+  schemaJson: string;
+  validationRulesJson: string | null;
+  uiSchemaJson: string | null;
+}
+
+export interface DatabaseLockRequestDto {
+  reportingYear: number;
+  mode: 'synchronous' | 'scheduled';
+  scheduledAt?: string;
+}
+
+export interface DatabaseLockResultDto {
+  reportingYear: number;
+  formsLocked: number;
+  formsSkipped: number;
+  status: string;
 }
 
 // ── Patient Dashboard types ─────────────────────────────────────

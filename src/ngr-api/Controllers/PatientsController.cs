@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using NgrApi.Data;
 using NgrApi.DTOs;
 using NgrApi.Services;
@@ -256,6 +257,53 @@ public class PatientsController : ControllerBase
         return CreatedAtAction(nameof(GetFormSubmissions), new { id }, result);
     }
 
+    /// <summary>Get a specific form submission with schema</summary>
+    [HttpGet("{id:int}/forms/{formId:int}")]
+    public async Task<ActionResult<FormSubmissionDto>> GetFormSubmission(
+        int id, int formId,
+        [FromServices] IFormService formService)
+    {
+        var submission = await formService.GetFormSubmissionByIdAsync(formId);
+        if (submission == null) return NotFound();
+        return Ok(submission);
+    }
+
+    /// <summary>Update form data (save / mark complete)</summary>
+    [HttpPut("{id:int}/forms/{formId:int}")]
+    [Authorize(Policy = "ClinicalUser")]
+    public async Task<ActionResult<FormSubmissionDto>> UpdateFormData(
+        int id, int formId,
+        [FromBody] UpdateFormDataDto dto,
+        [FromServices] IFormService formService)
+    {
+        try
+        {
+            var isAdmin = User.IsInRole("FoundationAnalyst") || User.IsInRole("SystemAdmin");
+            var (_, userEmail) = GetUserInfo();
+            var result = await formService.UpdateFormDataAsync(formId, dto, userEmail, isAdmin);
+            if (result == null) return NotFound();
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+    }
+
+    /// <summary>Validate form data without saving</summary>
+    [HttpPost("{id:int}/forms/{formId:int}/validate")]
+    public async Task<ActionResult<FormValidationResultDto>> ValidateForm(
+        int id, int formId,
+        [FromServices] IFormService formService)
+    {
+        var submission = await _context.FormSubmissions
+            .Include(f => f.FormDefinition)
+            .FirstOrDefaultAsync(f => f.Id == formId);
+        if (submission == null) return NotFound();
+        var result = formService.ValidateFormData(submission);
+        return Ok(result);
+    }
+
     /// <summary>Delete a form submission</summary>
     [HttpDelete("{id:int}/forms/{formId:int}")]
     [Authorize(Policy = "ClinicalUser")]
@@ -263,9 +311,29 @@ public class PatientsController : ControllerBase
         int id, int formId,
         [FromServices] IFormService formService)
     {
-        var deleted = await formService.DeleteFormSubmissionAsync(formId);
-        if (!deleted) return NotFound();
-        return NoContent();
+        try
+        {
+            var isAdmin = User.IsInRole("FoundationAnalyst") || User.IsInRole("SystemAdmin");
+            var deleted = await formService.DeleteFormSubmissionAsync(formId, isAdmin);
+            if (!deleted) return NotFound();
+            return NoContent();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+    }
+
+    /// <summary>Execute database lock for a reporting year (Foundation Admin only)</summary>
+    [HttpPost("database-lock")]
+    [Authorize(Policy = "FoundationAnalyst")]
+    public async Task<ActionResult<DatabaseLockResultDto>> ExecuteDatabaseLock(
+        [FromBody] DatabaseLockRequestDto dto,
+        [FromServices] IFormService formService)
+    {
+        var (_, userEmail) = GetUserInfo();
+        var result = await formService.ExecuteDatabaseLockAsync(dto.ReportingYear, userEmail);
+        return Ok(result);
     }
 
     // ── Hard-Delete (05-005) ─────────────────────────────────────

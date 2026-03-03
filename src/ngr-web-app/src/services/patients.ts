@@ -18,6 +18,10 @@ import type {
   BulkAssociationModifyDto,
   BulkAssociationResultDto,
   HardDeleteConfirmDto,
+  UpdateFormDataDto,
+  FormValidationResultDto,
+  DatabaseLockRequestDto,
+  DatabaseLockResultDto,
 } from '../types';
 import { oktaAuth } from '../lib/okta';
 
@@ -109,8 +113,25 @@ export const patientsService = {
     return apiPost<FormSubmissionDto>(`/api/patients/${patientId}/forms`, data);
   },
 
+  getFormSubmission(patientId: number, formId: number): Promise<FormSubmissionDto> {
+    return apiGet<FormSubmissionDto>(`/api/patients/${patientId}/forms/${formId}`);
+  },
+
+  updateFormData(patientId: number, formId: number, data: UpdateFormDataDto): Promise<FormSubmissionDto> {
+    return apiPut<FormSubmissionDto>(`/api/patients/${patientId}/forms/${formId}`, data);
+  },
+
+  validateForm(patientId: number, formId: number): Promise<FormValidationResultDto> {
+    return apiPost<FormValidationResultDto>(`/api/patients/${patientId}/forms/${formId}/validate`, {});
+  },
+
   deleteFormSubmission(patientId: number, formId: number): Promise<void> {
     return apiDelete(`/api/patients/${patientId}/forms/${formId}`);
+  },
+
+  // ── Database Lock (06-005) ──────────────────────────────────
+  executeDatabaseLock(data: DatabaseLockRequestDto): Promise<DatabaseLockResultDto> {
+    return apiPost<DatabaseLockResultDto>('/api/patients/database-lock', data);
   },
 
   // ── Patient Files (05-006, 05-007) ────────────────────────────

@@ -88,7 +88,7 @@ iac/runbook.md           # Operations runbook
 - **Hard-delete:** `POST /api/patients/{id}/hard-delete` (Foundation Admin only). Requires CFF ID confirmation. Cascading delete of all related data. Audit logged without PHI.
 - **Bulk program modification:** `POST /api/patients/bulk-association` (Foundation Admin). Supports add, transfer, remove from program, consent withdrawal. Transactional with audit logging.
 - **Admin Patient Search:** Foundation Admin tool at `/admin/patient-search` for global patient search across all programs including ORH.
-- **Form engine:** Dynamic eCRF rendering from JSON schema definitions stored in the `FormDefinitions` table.
+- **Form engine:** Dynamic eCRF rendering from JSON schema definitions stored in `FormDefinitions` table. 10 form types: Demographics, Diagnosis, Sweat Test, Transplant, ALD Initiation (shared); Annual Review, Encounter, Labs/Tests, Care Episode, Phone Note (program-specific). Dual status: Complete/Incomplete + Locked/Unlocked. 4-tier validation engine. Frontend components: `FormField` (9 field types), `RepeatBlock` (accordion), `FormRenderer` (schema-driven), `FormPageLayout` (patient header + save/complete/exit). Database lock locks forms by year. EMR updates downgrade status with review banner.
 - **CORS:** Configured via `Cors:AllowedOrigins` in appsettings.
 - **Secrets:** All connection strings and credentials go through Azure Key Vault. Local dev uses User Secrets or docker-compose environment variables.
 - **Logging:** Serilog → Console. Application Insights sink is conditional (only enabled when connection string is configured).

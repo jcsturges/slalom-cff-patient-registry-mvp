@@ -16,6 +16,7 @@ import { ProgramFormPage } from './pages/programs/ProgramFormPage';
 import { AnnouncementManagerPage } from './pages/admin/AnnouncementManagerPage';
 import { HelpPageManagerPage } from './pages/admin/HelpPageManagerPage';
 import { PatientSearchPage } from './pages/admin/PatientSearchPage';
+import { FormEditPage } from './pages/forms/FormEditPage';
 import { AuthGate } from './components/AuthGate';
 
 function LoadingSpinner() {
@@ -48,6 +49,7 @@ export function AppRoutes() {
             <Route path="/patients/:id" element={<PatientDetailPage />} />
             <Route path="/patients/:id/edit" element={<PatientFormPage />} />
             <Route path="/patients/merge" element={<MergePatientsPage />} />
+            <Route path="/patients/:patientId/forms/:formId" element={<FormEditPage />} />
             <Route path="/programs" element={<ProgramListPage />} />
             <Route path="/programs/new" element={<ProgramFormPage />} />
             <Route path="/programs/:id/edit" element={<ProgramFormPage />} />
