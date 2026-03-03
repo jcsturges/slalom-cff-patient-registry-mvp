@@ -93,7 +93,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new()
         {
             ValidateIssuer = true,
-            ValidateAudience = false, // TODO: set correct Okta audience and re-enable
+            ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ClockSkew = TimeSpan.FromMinutes(2),

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useOktaAuth } from '@okta/okta-react';
-import { Alert, Box, Button, Snackbar, Typography } from '@mui/material';
+import { Alert, Box, Button, CircularProgress, Snackbar, Typography } from '@mui/material';
 import { GlobalHeader } from './GlobalHeader';
 import { NavigationBar } from './NavigationBar';
 import { AppBreadcrumbs } from './Breadcrumbs';
@@ -28,8 +28,8 @@ export function Layout() {
   if (authState && !authState.isAuthenticated) {
     return (
       <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="100vh" gap={3}>
-        <Typography variant="h4">CFF Registry</Typography>
-        <Typography color="text.secondary">You are not logged in.</Typography>
+        <Typography variant="h4" fontWeight={700} color="primary.main">CFF Registry</Typography>
+        <Typography color="text.secondary">Please log in to continue.</Typography>
         <Button
           variant="contained"
           size="large"
@@ -38,24 +38,16 @@ export function Layout() {
             void oktaAuth.signInWithRedirect({ originalUri: uri });
           }}
         >
-          Log In with Okta
+          Log In
         </Button>
-        <Typography variant="caption" color="text.disabled">
-          authState: {JSON.stringify({ isAuthenticated: authState?.isAuthenticated, isPending: authState?.isPending })}
-          {' | '}token: {oktaAuth.getAccessToken() ? 'exists' : 'none'}
-        </Typography>
       </Box>
     );
   }
 
-  // Still loading auth state — show nothing to avoid flash
   if (!authState) {
     return (
-      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="100vh" gap={2}>
-        <Typography color="text.secondary">Loading...</Typography>
-        <Typography variant="caption" color="text.disabled">
-          authState: null | token: {oktaAuth.getAccessToken() ? 'exists' : 'none'}
-        </Typography>
+      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+        <CircularProgress />
       </Box>
     );
   }
