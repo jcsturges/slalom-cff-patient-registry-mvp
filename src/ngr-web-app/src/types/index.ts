@@ -478,3 +478,40 @@ export interface ReportDownloadRequestDto {
   executionId: number;
   format: 'csv' | 'excel';
 }
+
+// ── Data Export types ───────────────────────────────────────────
+
+export interface DataExportRequestDto {
+  formTypes: string[];
+  dateFrom?: string;
+  dateTo?: string;
+  completenessFilter: 'complete_only' | 'all';
+  diagnosisFilter?: string;
+  outputFormat: 'coded' | 'descriptive';
+  programId: number;
+}
+
+export interface SavedDownloadDefinitionDto {
+  id: number;
+  name: string;
+  description: string | null;
+  ownerEmail: string;
+  programId: number;
+  parametersJson: string;
+  createdAt: string;
+  updatedAt: string;
+  lastExecutedAt: string | null;
+}
+
+export interface CreateSavedDownloadDto {
+  name: string;
+  description?: string;
+  programId: number;
+  parametersJson: string;
+}
+
+export interface UpdateSavedDownloadDto {
+  name: string;
+  description?: string;
+  parametersJson?: string;
+}

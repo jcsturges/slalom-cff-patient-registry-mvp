@@ -32,6 +32,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<SavedReport> SavedReports => Set<SavedReport>();
     public DbSet<ReportExecution> ReportExecutions => Set<ReportExecution>();
     public DbSet<ReportDownloadLog> ReportDownloadLogs => Set<ReportDownloadLog>();
+    public DbSet<SavedDownloadDefinition> SavedDownloadDefinitions => Set<SavedDownloadDefinition>();
     public DbSet<ImportJob> ImportJobs => Set<ImportJob>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
@@ -440,6 +441,18 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.UserRole).HasMaxLength(50);
             entity.Property(e => e.Format).HasMaxLength(10).IsRequired();
             entity.Property(e => e.DownloadedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // SavedDownloadDefinition Configuration
+        modelBuilder.Entity<SavedDownloadDefinition>(entity =>
+        {
+            entity.ToTable("SavedDownloadDefinitions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.OwnerEmail).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.ParametersJson).HasColumnType("nvarchar(max)").IsRequired();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         });
 
         // ImportJob Configuration

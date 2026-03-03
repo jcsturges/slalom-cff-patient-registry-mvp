@@ -26,6 +26,7 @@ export const CP_NAV_ITEMS: NavItem[] = [
   },
   { label: 'User Management', path: '/user-management' },
   { label: 'Reporting', path: '/reports' },
+  { label: 'Data Export', path: '/export' },
   { label: 'EMR Upload', path: '/import' },
 ];
 
@@ -43,6 +44,7 @@ export const FOUNDATION_NAV_ITEMS: NavItem[] = [
   { label: 'User Management', path: '/user-management' },
   { label: 'User Analytics', path: '/admin/analytics' },
   { label: 'Reporting', path: '/reports' },
+  { label: 'Data Export', path: '/export' },
   { label: 'Database Lock', path: '/admin/database-lock' },
 ];
 
