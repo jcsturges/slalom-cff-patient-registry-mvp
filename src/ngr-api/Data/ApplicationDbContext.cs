@@ -29,6 +29,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<HelpPage> HelpPages => Set<HelpPage>();
     public DbSet<ContactRequest> ContactRequests => Set<ContactRequest>();
+    public DbSet<SavedReport> SavedReports => Set<SavedReport>();
+    public DbSet<ReportExecution> ReportExecutions => Set<ReportExecution>();
+    public DbSet<ReportDownloadLog> ReportDownloadLogs => Set<ReportDownloadLog>();
     public DbSet<ImportJob> ImportJobs => Set<ImportJob>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
@@ -394,6 +397,49 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.AttachmentBlobPath).HasMaxLength(1000);
             entity.Property(e => e.Status).HasMaxLength(20).IsRequired();
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // SavedReport Configuration
+        modelBuilder.Entity<SavedReport>(entity =>
+        {
+            entity.ToTable("SavedReports");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.Scope).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.QueryDefinitionJson).HasColumnType("nvarchar(max)").IsRequired();
+            entity.Property(e => e.ReportType).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.OwnerEmail).HasMaxLength(255);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // ReportExecution Configuration
+        modelBuilder.Entity<ReportExecution>(entity =>
+        {
+            entity.ToTable("ReportExecutions");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ReportType).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.ExecutedBy).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.ResultDataJson).HasColumnType("nvarchar(max)").IsRequired();
+            entity.Property(e => e.ExecutedAt).HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.SavedReport)
+                  .WithMany()
+                  .HasForeignKey(e => e.SavedReportId)
+                  .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        // ReportDownloadLog Configuration
+        modelBuilder.Entity<ReportDownloadLog>(entity =>
+        {
+            entity.ToTable("ReportDownloadLogs");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ReportName).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.ReportType).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.UserEmail).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.UserRole).HasMaxLength(50);
+            entity.Property(e => e.Format).HasMaxLength(10).IsRequired();
+            entity.Property(e => e.DownloadedAt).HasDefaultValueSql("GETUTCDATE()");
         });
 
         // ImportJob Configuration

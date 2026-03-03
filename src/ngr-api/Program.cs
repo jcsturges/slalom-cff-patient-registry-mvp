@@ -135,6 +135,7 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 builder.Services.AddScoped<IPatientFileService, PatientFileService>();
 builder.Services.AddScoped<IFormBusinessRulesService, FormBusinessRulesService>();
+builder.Services.AddScoped<IReportingService, ReportingService>();
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
 builder.Services.AddScoped<IHelpPageService, HelpPageService>();
 builder.Services.AddScoped<IContactRequestService, ContactRequestService>();

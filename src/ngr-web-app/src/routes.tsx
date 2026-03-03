@@ -17,6 +17,9 @@ import { AnnouncementManagerPage } from './pages/admin/AnnouncementManagerPage';
 import { HelpPageManagerPage } from './pages/admin/HelpPageManagerPage';
 import { PatientSearchPage } from './pages/admin/PatientSearchPage';
 import { FormEditPage } from './pages/forms/FormEditPage';
+import { ReportingPage } from './pages/reports/ReportingPage';
+import { ReportBuilderPage } from './pages/reports/ReportBuilderPage';
+import { PreDefinedReportPage } from './pages/reports/PreDefinedReportPage';
 import { AuthGate } from './components/AuthGate';
 
 function LoadingSpinner() {
@@ -54,7 +57,13 @@ export function AppRoutes() {
             <Route path="/programs/new" element={<ProgramFormPage />} />
             <Route path="/programs/:id/edit" element={<ProgramFormPage />} />
             <Route path="/forms" element={<PlaceholderPage title="Forms" />} />
-            <Route path="/reports" element={<PlaceholderPage title="Reporting" />} />
+            <Route path="/reports" element={<ReportingPage />} />
+            <Route path="/reports/builder" element={<ReportBuilderPage />} />
+            <Route path="/reports/incomplete-records" element={<PreDefinedReportPage reportKind="incomplete_records" />} />
+            <Route path="/reports/patients-due-visit" element={<PreDefinedReportPage reportKind="patients_due_visit" />} />
+            <Route path="/reports/diabetes-testing" element={<PreDefinedReportPage reportKind="diabetes_testing" />} />
+            <Route path="/reports/admin" element={<PreDefinedReportPage reportKind="program_list" />} />
+            <Route path="/reports/audit" element={<PreDefinedReportPage reportKind="user_management_audit" />} />
             <Route path="/import" element={<PlaceholderPage title="EMR Upload" />} />
             <Route path="/help" element={<PlaceholderPage title="Help" />} />
             <Route path="/user-management" element={<PlaceholderPage title="User Management" />} />

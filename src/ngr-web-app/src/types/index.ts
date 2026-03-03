@@ -422,3 +422,59 @@ export interface BulkAssociationResultDto {
 export interface HardDeleteConfirmDto {
   confirmCffId: number;
 }
+
+// ── Reporting types ─────────────────────────────────────────────
+
+export interface SavedReportDto {
+  id: number;
+  title: string;
+  description: string | null;
+  scope: string;
+  reportType: string;
+  ownerEmail: string;
+  programId: number | null;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  lastExecutedAt: string | null;
+}
+
+export interface CreateSavedReportDto {
+  title: string;
+  description?: string;
+  scope?: string;
+  queryDefinitionJson: string;
+  programId?: number;
+}
+
+export interface UpdateSavedReportDto {
+  title: string;
+  description?: string;
+  queryDefinitionJson?: string;
+}
+
+export interface ExecuteReportDto {
+  savedReportId?: number;
+  reportType?: string;
+  programId?: number;
+  queryDefinitionJson?: string;
+  reportingYear?: number;
+}
+
+export interface ReportResultDto {
+  executionId: number;
+  reportTitle: string;
+  reportType: string;
+  executedBy: string;
+  executedAt: string;
+  recordCount: number;
+  executionTimeMs: number;
+  columns: string[];
+  rows: Record<string, unknown>[];
+  querySummary: string | null;
+}
+
+export interface ReportDownloadRequestDto {
+  executionId: number;
+  format: 'csv' | 'excel';
+}
