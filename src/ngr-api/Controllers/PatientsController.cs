@@ -469,6 +469,43 @@ public class PatientsController : ControllerBase
         });
     }
 
+    // ── Form Business Rules Endpoints (07-*) ───────────────────
+
+    /// <summary>Check if a form type can be created for a patient (gating rules)</summary>
+    [HttpGet("{id:int}/can-create-form")]
+    public async Task<IActionResult> CanCreateForm(
+        int id,
+        [FromQuery] string formType,
+        [FromQuery] int programId,
+        [FromServices] IFormBusinessRulesService rulesService)
+    {
+        var (allowed, reason) = await rulesService.CanCreateFormAsync(id, formType, programId);
+        return Ok(new { allowed, reason });
+    }
+
+    /// <summary>Get default Annual Review year for a patient/program</summary>
+    [HttpGet("{id:int}/annual-review-default-year")]
+    public async Task<IActionResult> GetDefaultAnnualReviewYear(
+        int id,
+        [FromQuery] int programId,
+        [FromServices] IFormBusinessRulesService rulesService)
+    {
+        var year = await rulesService.GetDefaultAnnualReviewYearAsync(id, programId);
+        return Ok(new { year });
+    }
+
+    /// <summary>Get carry-forward data for Encounter sub-form</summary>
+    [HttpGet("{id:int}/carry-forward")]
+    public async Task<IActionResult> GetCarryForward(
+        int id,
+        [FromQuery] int programId,
+        [FromQuery] string subFormType,
+        [FromServices] IFormBusinessRulesService rulesService)
+    {
+        var data = await rulesService.GetCarryForwardDataAsync(id, programId, subFormType);
+        return Ok(new { data, available = data != null });
+    }
+
     // ── Duplicate Detection Endpoint (04-005) ────────────────────
 
     /// <summary>Check for duplicate patients before creating a new record</summary>

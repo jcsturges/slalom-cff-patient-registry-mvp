@@ -182,4 +182,17 @@ export const patientsService = {
   bulkModifyAssociations(data: BulkAssociationModifyDto): Promise<BulkAssociationResultDto> {
     return apiPost<BulkAssociationResultDto>('/api/patients/bulk-association', data);
   },
+
+  // ── Form Business Rules (07-*) ────────────────────────────────
+  canCreateForm(patientId: number, formType: string, programId: number): Promise<{ allowed: boolean; reason: string | null }> {
+    return apiGet(`/api/patients/${patientId}/can-create-form`, { formType, programId });
+  },
+
+  getDefaultAnnualReviewYear(patientId: number, programId: number): Promise<{ year: number }> {
+    return apiGet(`/api/patients/${patientId}/annual-review-default-year`, { programId });
+  },
+
+  getCarryForward(patientId: number, programId: number, subFormType: string): Promise<{ data: string | null; available: boolean }> {
+    return apiGet(`/api/patients/${patientId}/carry-forward`, { programId, subFormType });
+  },
 };
