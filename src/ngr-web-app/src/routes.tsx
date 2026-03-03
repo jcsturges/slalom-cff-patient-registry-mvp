@@ -15,6 +15,7 @@ import { ProgramListPage } from './pages/programs/ProgramListPage';
 import { ProgramFormPage } from './pages/programs/ProgramFormPage';
 import { AnnouncementManagerPage } from './pages/admin/AnnouncementManagerPage';
 import { HelpPageManagerPage } from './pages/admin/HelpPageManagerPage';
+import { PatientSearchPage } from './pages/admin/PatientSearchPage';
 import { AuthGate } from './components/AuthGate';
 
 function LoadingSpinner() {
@@ -58,6 +59,7 @@ export function AppRoutes() {
             <Route path="/contact" element={<PlaceholderPage title="Contact Us" />} />
 
             {/* ── Foundation Admin routes ───────────────────────── */}
+            <Route path="/admin/patient-search" element={<PatientSearchPage />} />
             <Route path="/admin/announcements" element={<AnnouncementManagerPage />} />
             <Route path="/admin/help-pages" element={<HelpPageManagerPage />} />
             <Route path="/admin/analytics" element={<PlaceholderPage title="User Analytics" />} />

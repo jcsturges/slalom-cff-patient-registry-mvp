@@ -10,7 +10,23 @@ import type {
   DuplicateMatchDto,
   MergeRequestDto,
   MergeResultDto,
+  PatientDashboardDto,
+  FormSubmissionDto,
+  CreateFormSubmissionDto,
+  PatientFileDto,
+  UpdatePatientFileDto,
+  BulkAssociationModifyDto,
+  BulkAssociationResultDto,
+  HardDeleteConfirmDto,
 } from '../types';
+import { oktaAuth } from '../lib/okta';
+
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
+
+function authHeaders(): Record<string, string> {
+  const token = oktaAuth.getAccessToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 export interface PatientListParams {
   page?: number;
@@ -61,9 +77,8 @@ export const patientsService = {
     return apiPost<PatientProgramAssociationDto>(`/api/patients/${patientId}/programs`, data);
   },
 
-  removeFromProgram(patientId: number, programId: number, _data: RemovePatientFromProgramDto): Promise<void> {
-    // Body sent via POST since DELETE with body is non-standard
-    return apiPost(`/api/patients/${patientId}/programs/${programId}/remove`, _data);
+  removeFromProgram(patientId: number, programId: number, data: RemovePatientFromProgramDto): Promise<void> {
+    return apiPost(`/api/patients/${patientId}/programs/${programId}/remove`, data);
   },
 
   // ── Duplicate Detection (04-005) ──────────────────────────────
@@ -74,5 +89,76 @@ export const patientsService = {
   // ── Merge (04-008, 04-009, 04-010) ────────────────────────────
   merge(data: MergeRequestDto): Promise<MergeResultDto> {
     return apiPost<MergeResultDto>('/api/patients/merge', data);
+  },
+
+  // ── Dashboard (05-001, 05-002) ────────────────────────────────
+  getDashboard(patientId: number): Promise<PatientDashboardDto> {
+    return apiGet<PatientDashboardDto>(`/api/patients/${patientId}/dashboard`);
+  },
+
+  // ── Form Submissions (05-002) ─────────────────────────────────
+  getFormSubmissions(patientId: number, formCode?: string, page = 1, pageSize = 5): Promise<FormSubmissionDto[]> {
+    return apiGet<FormSubmissionDto[]>(`/api/patients/${patientId}/forms`, {
+      formCode,
+      page,
+      pageSize,
+    });
+  },
+
+  createFormSubmission(patientId: number, data: CreateFormSubmissionDto): Promise<FormSubmissionDto> {
+    return apiPost<FormSubmissionDto>(`/api/patients/${patientId}/forms`, data);
+  },
+
+  deleteFormSubmission(patientId: number, formId: number): Promise<void> {
+    return apiDelete(`/api/patients/${patientId}/forms/${formId}`);
+  },
+
+  // ── Patient Files (05-006, 05-007) ────────────────────────────
+  getFiles(patientId: number, page = 1, pageSize = 5): Promise<PatientFileDto[]> {
+    return apiGet<PatientFileDto[]>(`/api/patients/${patientId}/files`, { page, pageSize });
+  },
+
+  async uploadFile(
+    patientId: number,
+    file: File,
+    programId: number,
+    fileType: string,
+    description?: string,
+    otherFileTypeDescription?: string,
+  ): Promise<PatientFileDto> {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('programId', String(programId));
+    formData.append('fileType', fileType);
+    if (description) formData.append('description', description);
+    if (otherFileTypeDescription) formData.append('otherFileTypeDescription', otherFileTypeDescription);
+
+    const res = await fetch(`${BASE_URL}/api/patients/${patientId}/files`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: formData,
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(text || `HTTP ${res.status}`);
+    }
+    return res.json() as Promise<PatientFileDto>;
+  },
+
+  updateFileMetadata(patientId: number, fileId: number, data: UpdatePatientFileDto): Promise<PatientFileDto> {
+    return apiPut<PatientFileDto>(`/api/patients/${patientId}/files/${fileId}`, data);
+  },
+
+  deleteFile(patientId: number, fileId: number): Promise<void> {
+    return apiDelete(`/api/patients/${patientId}/files/${fileId}`);
+  },
+
+  // ── Admin Tools (05-003, 05-004, 05-005) ──────────────────────
+  hardDelete(patientId: number, data: HardDeleteConfirmDto): Promise<void> {
+    return apiPost(`/api/patients/${patientId}/hard-delete`, data);
+  },
+
+  bulkModifyAssociations(data: BulkAssociationModifyDto): Promise<BulkAssociationResultDto> {
+    return apiPost<BulkAssociationResultDto>('/api/patients/bulk-association', data);
   },
 };

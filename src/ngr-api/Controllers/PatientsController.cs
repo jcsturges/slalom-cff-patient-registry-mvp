@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using NgrApi.Data;
 using NgrApi.DTOs;
 using NgrApi.Services;
 
@@ -13,15 +14,18 @@ public class PatientsController : ControllerBase
 {
     private readonly IPatientService _patientService;
     private readonly IAuditService _auditService;
+    private readonly ApplicationDbContext _context;
     private readonly ILogger<PatientsController> _logger;
 
     public PatientsController(
         IPatientService patientService,
         IAuditService auditService,
+        ApplicationDbContext context,
         ILogger<PatientsController> logger)
     {
         _patientService = patientService;
         _auditService = auditService;
+        _context = context;
         _logger = logger;
     }
 
@@ -203,6 +207,198 @@ public class PatientsController : ControllerBase
         {
             return BadRequest(ex.Message);
         }
+    }
+
+    // ── Dashboard Endpoint (05-001) ─────────────────────────────
+
+    /// <summary>Get patient dashboard with all form tables and files</summary>
+    [HttpGet("{id:int}/dashboard")]
+    public async Task<ActionResult<FormSubmissionDto>> GetDashboard(
+        int id, [FromServices] IFormService formService)
+    {
+        try
+        {
+            var dashboard = await formService.GetPatientDashboardAsync(id, _patientService);
+            return Ok(dashboard);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    // ── Form Submissions (05-002) ────────────────────────────────
+
+    /// <summary>Get form submissions for a patient</summary>
+    [HttpGet("{id:int}/forms")]
+    public async Task<ActionResult<IEnumerable<FormSubmissionDto>>> GetFormSubmissions(
+        int id,
+        [FromQuery] string? formCode,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 5,
+        [FromServices] IFormService formService = null!)
+    {
+        var submissions = await formService.GetPatientFormSubmissionsAsync(id, formCode, page, pageSize);
+        return Ok(submissions);
+    }
+
+    /// <summary>Create a form submission for a patient</summary>
+    [HttpPost("{id:int}/forms")]
+    [Authorize(Policy = "ClinicalUser")]
+    public async Task<ActionResult<FormSubmissionDto>> CreateFormSubmission(
+        int id,
+        [FromBody] CreateFormSubmissionDto dto,
+        [FromServices] IFormService formService)
+    {
+        if (dto.PatientId != id) dto.PatientId = id;
+        var (_, userEmail) = GetUserInfo();
+        var result = await formService.CreateFormSubmissionAsync(dto, userEmail);
+        return CreatedAtAction(nameof(GetFormSubmissions), new { id }, result);
+    }
+
+    /// <summary>Delete a form submission</summary>
+    [HttpDelete("{id:int}/forms/{formId:int}")]
+    [Authorize(Policy = "ClinicalUser")]
+    public async Task<IActionResult> DeleteFormSubmission(
+        int id, int formId,
+        [FromServices] IFormService formService)
+    {
+        var deleted = await formService.DeleteFormSubmissionAsync(formId);
+        if (!deleted) return NotFound();
+        return NoContent();
+    }
+
+    // ── Hard-Delete (05-005) ─────────────────────────────────────
+
+    /// <summary>Permanently delete a patient record (Foundation Admin only)</summary>
+    [HttpPost("{id:int}/hard-delete")]
+    [Authorize(Policy = "FoundationAnalyst")]
+    public async Task<IActionResult> HardDelete(int id, [FromBody] HardDeleteConfirmDto dto)
+    {
+        var patient = await _patientService.GetPatientByIdAsync(id);
+        if (patient == null) return NotFound();
+
+        if (patient.CffId != dto.ConfirmCffId)
+            return BadRequest("CFF ID confirmation does not match. Hard-delete aborted.");
+
+        var (userId, userEmail) = GetUserInfo();
+
+        // Log audit BEFORE deleting (no PHI — only CFF ID)
+        await _auditService.LogActionAsync(
+            "Patient", id.ToString(), "HardDelete",
+            new { CffId = patient.CffId }, null, userId, userEmail,
+            HttpContext.Connection.RemoteIpAddress?.ToString());
+
+        // Cascade delete all related data
+        var entity = await _patientService.GetPatientByIdAsync(id);
+        if (entity == null) return NotFound();
+
+        // Use EF cascade delete
+        var patientEntity = await _context.Patients.FindAsync(id);
+        if (patientEntity != null)
+        {
+            _context.Patients.Remove(patientEntity);
+            await _context.SaveChangesAsync();
+        }
+
+        _logger.LogWarning("Patient {PatientId} (CFF ID {CffId}) hard-deleted by {User}",
+            id, patient.CffId, userEmail);
+
+        return NoContent();
+    }
+
+    // ── Bulk Association Modification (05-004) ───────────────────
+
+    /// <summary>Bulk modify program associations for multiple patients (Foundation Admin)</summary>
+    [HttpPost("bulk-association")]
+    [Authorize(Policy = "FoundationAnalyst")]
+    public async Task<ActionResult<BulkAssociationResultDto>> BulkModifyAssociations(
+        [FromBody] BulkAssociationModifyDto dto)
+    {
+        var (userId, userEmail) = GetUserInfo();
+        int affected = 0;
+
+        foreach (var patientId in dto.PatientIds)
+        {
+            try
+            {
+                switch (dto.Action)
+                {
+                    case "remove_all_consent":
+                    case "remove_all_withdrawal":
+                        await _patientService.RemoveFromProgramAsync(
+                            patientId, 0,
+                            new RemovePatientFromProgramDto { RemovalReason = "Patient withdrew consent" },
+                            userEmail);
+                        affected++;
+                        break;
+
+                    case "remove_all_inactivity":
+                        // Remove from all active programs
+                        var associations = await _patientService.GetProgramAssociationsAsync(patientId);
+                        foreach (var assoc in associations.Where(a => a.Status == "Active"))
+                        {
+                            await _patientService.RemoveFromProgramAsync(
+                                patientId, assoc.ProgramId,
+                                new RemovePatientFromProgramDto { RemovalReason = dto.Reason ?? "Inactivity" },
+                                userEmail);
+                        }
+                        affected++;
+                        break;
+
+                    case "add_to_program":
+                        if (dto.TargetProgramId.HasValue)
+                        {
+                            await _patientService.AddToProgramAsync(patientId,
+                                new AddPatientToProgramDto { ProgramId = dto.TargetProgramId.Value, IsPrimaryProgram = false },
+                                userEmail);
+                            affected++;
+                        }
+                        break;
+
+                    case "transfer":
+                        if (dto.SourceProgramId.HasValue && dto.TargetProgramId.HasValue)
+                        {
+                            await _patientService.RemoveFromProgramAsync(
+                                patientId, dto.SourceProgramId.Value,
+                                new RemovePatientFromProgramDto { RemovalReason = dto.Reason ?? "Transfer" },
+                                userEmail);
+                            await _patientService.AddToProgramAsync(patientId,
+                                new AddPatientToProgramDto { ProgramId = dto.TargetProgramId.Value, IsPrimaryProgram = false },
+                                userEmail);
+                            affected++;
+                        }
+                        break;
+
+                    case "remove_from_program":
+                        if (dto.SourceProgramId.HasValue)
+                        {
+                            await _patientService.RemoveFromProgramAsync(
+                                patientId, dto.SourceProgramId.Value,
+                                new RemovePatientFromProgramDto { RemovalReason = dto.Reason ?? "Admin removal" },
+                                userEmail);
+                            affected++;
+                        }
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Bulk action failed for patient {PatientId}", patientId);
+            }
+        }
+
+        await _auditService.LogActionAsync(
+            "BulkAssociationModify", "batch", dto.Action,
+            null, new { dto.PatientIds, dto.Action, dto.TargetProgramId, dto.Reason, Affected = affected },
+            userId, userEmail, HttpContext.Connection.RemoteIpAddress?.ToString());
+
+        return Ok(new BulkAssociationResultDto
+        {
+            PatientsAffected = affected,
+            Action = dto.Action,
+            Status = "Completed",
+        });
     }
 
     // ── Duplicate Detection Endpoint (04-005) ────────────────────

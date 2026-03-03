@@ -24,6 +24,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserProgramRole> UserProgramRoles => Set<UserProgramRole>();
     public DbSet<PatientAlias> PatientAliases => Set<PatientAlias>();
+    public DbSet<PatientFile> PatientFiles => Set<PatientFile>();
     public DbSet<Content> Contents => Set<Content>();
     public DbSet<Announcement> Announcements => Set<Announcement>();
     public DbSet<HelpPage> HelpPages => Set<HelpPage>();
@@ -128,6 +129,33 @@ public class ApplicationDbContext : DbContext
                   .WithMany(p => p.Aliases)
                   .HasForeignKey(e => e.PatientId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // PatientFile Configuration
+        modelBuilder.Entity<PatientFile>(entity =>
+        {
+            entity.ToTable("PatientFiles");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.OriginalFileName).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.StoredFileName).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.BlobPath).HasMaxLength(1000).IsRequired();
+            entity.Property(e => e.ContentType).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.FileExtension).HasMaxLength(10).IsRequired();
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.FileType).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.OtherFileTypeDescription).HasMaxLength(200);
+            entity.Property(e => e.UploadedBy).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.UploadedAt).HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Patient)
+                  .WithMany()
+                  .HasForeignKey(e => e.PatientId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Program)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProgramId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // Encounter Configuration

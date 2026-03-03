@@ -83,6 +83,11 @@ iac/runbook.md           # Operations runbook
 - **Patient-program associations:** `PatientProgramAssignment` is the authoritative record for roster membership. Status (Active/Removed), removal reason, and timestamps tracked. ORH auto-association when patient has no remaining clinical programs. Consent withdrawal removes from ALL programs.
 - **Duplicate detection:** `POST /api/patients/duplicates` performs fuzzy matching using 8 rules: exact name+DOB, exact last name+DOB+sex, close DOB, Levenshtein distance, Soundex phonetic matching, last name at birth. Registry ID match requires one additional field confirmation.
 - **Patient merge:** `POST /api/patients/merge` atomically merges two records. Secondary CFF ID and names added as aliases to primary. Program associations unioned. Secondary marked as "Merged" status. Requires ProgramAdmin role.
+- **Patient Dashboard:** `GET /api/patients/{id}/dashboard` returns all form tables grouped by type + files. Form tables: Shared Forms, Transplants, Annual Reviews, Encounters, Labs, Care Episodes, Phone Notes, ALD Status. Each paginated at 5, reverse chronological.
+- **Patient files:** `PatientFile` model with upload/download/delete via `/api/patients/{id}/files`. Approved types: .pdf, .jpg, .jpeg, .png, .tif, .tiff. Max 10MB. Auto-renamed per convention: `<Prefix>_<RegistryID>_<SiteID>_<Date>_<Time>`. Stored in Azure Blob Storage.
+- **Hard-delete:** `POST /api/patients/{id}/hard-delete` (Foundation Admin only). Requires CFF ID confirmation. Cascading delete of all related data. Audit logged without PHI.
+- **Bulk program modification:** `POST /api/patients/bulk-association` (Foundation Admin). Supports add, transfer, remove from program, consent withdrawal. Transactional with audit logging.
+- **Admin Patient Search:** Foundation Admin tool at `/admin/patient-search` for global patient search across all programs including ORH.
 - **Form engine:** Dynamic eCRF rendering from JSON schema definitions stored in the `FormDefinitions` table.
 - **CORS:** Configured via `Cors:AllowedOrigins` in appsettings.
 - **Secrets:** All connection strings and credentials go through Azure Key Vault. Local dev uses User Secrets or docker-compose environment variables.

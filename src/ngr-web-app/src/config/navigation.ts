@@ -38,7 +38,7 @@ export const FOUNDATION_NAV_ITEMS: NavItem[] = [
   { label: 'Announcements', path: '/admin/announcements' },
   { label: 'Help Manager', path: '/admin/help-pages' },
   { label: 'Care Programs', path: '/programs' },
-  { label: 'Patient Search', path: '/patients' },
+  { label: 'Patient Search', path: '/admin/patient-search' },
   { label: 'Merge Duplicates', path: '/patients/merge' },
   { label: 'User Management', path: '/user-management' },
   { label: 'User Analytics', path: '/admin/analytics' },

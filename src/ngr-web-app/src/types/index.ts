@@ -277,3 +277,96 @@ export interface PaginatedResponse<T> {
   page: number;
   pageSize: number;
 }
+
+// ── Form Submission types ───────────────────────────────────────
+
+export interface FormSubmissionDto {
+  id: number;
+  formDefinitionId: number;
+  formName: string;
+  formCode: string;
+  patientId: number;
+  encounterId: number | null;
+  programId: number;
+  programName: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  lastModifiedBy: string | null;
+  encounterDate: string | null;
+  annualReviewYear: number | null;
+  transplantOrgan: string | null;
+  careEpisodeStartDate: string | null;
+  careEpisodeEndDate: string | null;
+  phoneNoteDate: string | null;
+  labDate: string | null;
+}
+
+export interface CreateFormSubmissionDto {
+  formDefinitionId: number;
+  patientId: number;
+  encounterId?: number;
+  programId: number;
+  formDataJson?: string;
+}
+
+// ── Patient Dashboard types ─────────────────────────────────────
+
+export interface PatientDashboardDto {
+  patient: PatientDto;
+  sharedForms: FormSubmissionDto[];
+  transplants: FormSubmissionDto[];
+  annualReviews: FormSubmissionDto[];
+  encounters: FormSubmissionDto[];
+  labs: FormSubmissionDto[];
+  careEpisodes: FormSubmissionDto[];
+  phoneNotes: FormSubmissionDto[];
+  aldStatus: FormSubmissionDto[];
+  files: PatientFileDto[];
+}
+
+// ── Patient File types ──────────────────────────────────────────
+
+export interface PatientFileDto {
+  id: number;
+  patientId: number;
+  programId: number;
+  programName: string;
+  originalFileName: string;
+  storedFileName: string;
+  contentType: string;
+  fileExtension: string;
+  fileSize: number;
+  description: string | null;
+  fileType: string;
+  otherFileTypeDescription: string | null;
+  uploadedAt: string;
+  uploadedBy: string;
+  downloadUrl: string | null;
+}
+
+export interface UpdatePatientFileDto {
+  description?: string;
+  fileType: string;
+  otherFileTypeDescription?: string;
+}
+
+// ── Admin bulk modification types ───────────────────────────────
+
+export interface BulkAssociationModifyDto {
+  patientIds: number[];
+  action: string;
+  targetProgramId?: number;
+  sourceProgramId?: number;
+  reason?: string;
+}
+
+export interface BulkAssociationResultDto {
+  patientsAffected: number;
+  action: string;
+  status: string;
+}
+
+export interface HardDeleteConfirmDto {
+  confirmCffId: number;
+}
