@@ -36,16 +36,28 @@ export const CP_NAV_ITEMS: NavItem[] = [
  */
 export const FOUNDATION_NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard', path: '/' },
-  { label: 'Announcements', path: '/admin/announcements' },
-  { label: 'Help Manager', path: '/admin/help-pages' },
-  { label: 'Care Programs', path: '/programs' },
-  { label: 'Patient Search', path: '/admin/patient-search' },
-  { label: 'Merge Duplicates', path: '/patients/merge' },
-  { label: 'User Management', path: '/user-management' },
+  {
+    label: 'Patients',
+    path: '/admin/patient-search',
+    children: [
+      { label: 'Patient Search', path: '/admin/patient-search' },
+      { label: 'Merge Duplicates', path: '/patients/merge' },
+    ],
+  },
+  {
+    label: 'Administration',
+    path: '/programs',
+    children: [
+      { label: 'Care Programs', path: '/programs' },
+      { label: 'User Management', path: '/user-management' },
+      { label: 'Announcements', path: '/admin/announcements' },
+      { label: 'Help Manager', path: '/admin/help-pages' },
+      { label: 'Database Lock', path: '/admin/database-lock' },
+    ],
+  },
   { label: 'User Analytics', path: '/admin/analytics' },
   { label: 'Reporting', path: '/reports' },
   { label: 'Data Export', path: '/export' },
-  { label: 'Database Lock', path: '/admin/database-lock' },
 ];
 
 /**

@@ -3,6 +3,8 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using NgrApi.Data;
 using NgrApi.Middleware;
 using NgrApi.Services;
@@ -84,12 +86,31 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 });
 
 // Configure Authentication with Okta
+//
+// The OIDC discovery document (.well-known/openid-configuration) and JWKS signing
+// keys are fetched once and held in memory by ConfigurationManager. We configure
+// this explicitly rather than relying on the implicit default so the caching
+// behaviour is visible and easy to tune:
+//   AutomaticRefreshInterval – proactive background refresh (every 24 h)
+//   RefreshInterval           – minimum gap between forced refreshes triggered by
+//                               a key-not-found failure (5 min, the IdentityModel default)
+var oktaAuthority = builder.Configuration["Okta:Authority"] ?? string.Empty;
+var oidcConfigManager = new ConfigurationManager<OpenIdConnectConfiguration>(
+    $"{oktaAuthority}/.well-known/openid-configuration",
+    new OpenIdConnectConfigurationRetriever(),
+    new HttpDocumentRetriever { RequireHttps = !builder.Environment.IsDevelopment() })
+{
+    AutomaticRefreshInterval = TimeSpan.FromHours(24),
+    RefreshInterval           = TimeSpan.FromMinutes(5),
+};
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = builder.Configuration["Okta:Authority"];
-        options.Audience = builder.Configuration["Okta:Audience"];
-        options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+        options.Authority             = oktaAuthority;
+        options.Audience              = builder.Configuration["Okta:Audience"];
+        options.RequireHttpsMetadata  = !builder.Environment.IsDevelopment();
+        options.ConfigurationManager  = oidcConfigManager;
         options.TokenValidationParameters = new()
         {
             ValidateIssuer = true,

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Ngr.Database")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+43d503509ad9b8108d0abd2a4daa64d91c7ae5c5")]
 [assembly: System.Reflection.AssemblyProductAttribute("Ngr.Database")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Ngr.Database")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

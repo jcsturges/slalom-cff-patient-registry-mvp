@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Box,
@@ -8,8 +8,7 @@ import {
   List,
   ListItemButton,
   ListItemText,
-  Menu,
-  MenuItem,
+  Paper,
   useMediaQuery,
   useTheme,
 } from '@mui/material';
@@ -18,11 +17,6 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { useRoles } from '../hooks/useRoles';
 import { getNavItems, type NavItem } from '../config/navigation';
-
-interface DropdownState {
-  anchorEl: HTMLElement | null;
-  items: NavItem[];
-}
 
 interface NavigationBarProps {
   onHelpClick?: () => void;
@@ -35,42 +29,27 @@ export function NavigationBar({ onHelpClick }: NavigationBarProps) {
   const theme = useTheme();
   const isTablet = useMediaQuery(theme.breakpoints.down('lg'));
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [dropdown, setDropdown] = useState<DropdownState>({ anchorEl: null, items: [] });
-  const dropdownTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const [openItem, setOpenItem] = useState<string | null>(null);
 
   const navItems = getNavItems(roles);
 
   const isActive = (item: NavItem): boolean => {
     if (item.path === '/') return location.pathname === '/';
+    if (item.children) {
+      return item.children.some((child) => location.pathname.startsWith(child.path));
+    }
     return location.pathname.startsWith(item.path);
   };
 
   const handleNavClick = (item: NavItem) => {
-    if (item.children && item.children.length > 0) return; // Handled by dropdown
+    if (item.children && item.children.length > 0) return;
     navigate(item.path);
     setMobileOpen(false);
   };
 
-  const handleDropdownOpen = (e: React.MouseEvent<HTMLElement>, item: NavItem) => {
-    if (item.children && item.children.length > 0) {
-      clearTimeout(dropdownTimeout.current);
-      setDropdown({ anchorEl: e.currentTarget, items: item.children });
-    }
-  };
-
-  const handleDropdownClose = () => {
-    dropdownTimeout.current = setTimeout(() => {
-      setDropdown({ anchorEl: null, items: [] });
-    }, 150);
-  };
-
-  const handleDropdownEnter = () => {
-    clearTimeout(dropdownTimeout.current);
-  };
-
-  const handleDropdownItemClick = (item: NavItem) => {
+  const handleChildClick = (item: NavItem) => {
     navigate(item.path);
-    setDropdown({ anchorEl: null, items: [] });
+    setOpenItem(null);
     setMobileOpen(false);
   };
 
@@ -82,7 +61,7 @@ export function NavigationBar({ onHelpClick }: NavigationBarProps) {
       aria-label="Primary navigation"
       sx={{
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'stretch',
         bgcolor: 'primary.light',
         px: 2,
         minHeight: 44,
@@ -94,30 +73,66 @@ export function NavigationBar({ onHelpClick }: NavigationBarProps) {
       }}
     >
       {navItems.map((item) => (
-        <Box key={item.label} sx={{ position: 'relative' }}>
+        <Box
+          key={item.label}
+          sx={{ position: 'relative', display: 'flex', alignItems: 'stretch' }}
+          onMouseEnter={() => item.children && setOpenItem(item.label)}
+          onMouseLeave={() => setOpenItem(null)}
+        >
           <Button
             color="inherit"
             size="small"
             onClick={() => handleNavClick(item)}
-            onMouseEnter={(e) => handleDropdownOpen(e, item)}
-            onMouseLeave={handleDropdownClose}
             endIcon={item.children ? <ArrowDropDownIcon /> : undefined}
             aria-haspopup={item.children ? 'true' : undefined}
-            aria-expanded={item.children && dropdown.anchorEl ? 'true' : undefined}
+            aria-expanded={item.children ? openItem === item.label : undefined}
             sx={{
               color: 'white',
-              px: 2,
-              py: 1,
+              px: 1.5,
+              py: 0,
+              height: '100%',
+              fontSize: '0.8125rem',
               fontWeight: isActive(item) ? 700 : 400,
               borderBottom: isActive(item) ? '2px solid #F5A623' : '2px solid transparent',
               borderRadius: 0,
-              '&:hover': {
-                bgcolor: 'rgba(255,255,255,0.1)',
-              },
+              '&:hover': { bgcolor: 'rgba(255,255,255,0.1)' },
             }}
           >
             {item.label}
           </Button>
+
+          {item.children && openItem === item.label && (
+            <Paper
+              elevation={4}
+              sx={{
+                position: 'absolute',
+                top: '100%',
+                left: 0,
+                minWidth: 200,
+                zIndex: (t) => t.zIndex.drawer + 2,
+                py: 0.5,
+              }}
+            >
+              {item.children.map((child) => (
+                <Box
+                  key={child.path}
+                  onClick={() => handleChildClick(child)}
+                  sx={{
+                    px: 2,
+                    py: 1,
+                    cursor: 'pointer',
+                    fontSize: '0.875rem',
+                    fontWeight: location.pathname === child.path ? 600 : 400,
+                    color: location.pathname === child.path ? 'primary.main' : 'text.primary',
+                    bgcolor: location.pathname === child.path ? 'action.selected' : 'transparent',
+                    '&:hover': { bgcolor: 'action.hover' },
+                  }}
+                >
+                  {child.label}
+                </Box>
+              ))}
+            </Paper>
+          )}
         </Box>
       ))}
 
@@ -127,33 +142,10 @@ export function NavigationBar({ onHelpClick }: NavigationBarProps) {
         size="small"
         onClick={onHelpClick}
         aria-label="Open context help"
-        sx={{ color: 'white' }}
+        sx={{ color: 'white', alignSelf: 'center' }}
       >
         <HelpOutlineIcon />
       </IconButton>
-
-      {/* ── Dropdown menu ─────────────────────────────────────── */}
-      <Menu
-        anchorEl={dropdown.anchorEl}
-        open={Boolean(dropdown.anchorEl)}
-        onClose={() => setDropdown({ anchorEl: null, items: [] })}
-        MenuListProps={{
-          onMouseEnter: handleDropdownEnter,
-          onMouseLeave: handleDropdownClose,
-        }}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-      >
-        {dropdown.items.map((child) => (
-          <MenuItem
-            key={child.path}
-            onClick={() => handleDropdownItemClick(child)}
-            selected={location.pathname === child.path}
-          >
-            {child.label}
-          </MenuItem>
-        ))}
-      </Menu>
     </Box>
   );
 
@@ -217,7 +209,7 @@ export function NavigationBar({ onHelpClick }: NavigationBarProps) {
                 <ListItemButton
                   key={child.path}
                   selected={location.pathname === child.path}
-                  onClick={() => handleDropdownItemClick(child)}
+                  onClick={() => handleChildClick(child)}
                   sx={{ py: 1, pl: 5 }}
                 >
                   <ListItemText

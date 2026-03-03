@@ -18,16 +18,15 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
-  const restoreOriginalUri = async (_oktaAuth: OktaAuth, originalUri: string) => {
-    // Use window.location instead of React Router navigate().
-    // A full page load ensures the Security provider initializes fresh
-    // with the tokens already in storage — eliminates the race condition
-    // where authState briefly shows "not authenticated" after callback.
-    const url = toRelativeUrl(originalUri || '/', window.location.origin);
-    window.location.replace(url);
-  };
+const restoreOriginalUri = async (_oktaAuth: OktaAuth, originalUri: string) => {
+  // Use window.location instead of React Router navigate().
+  // A full page load ensures the Security provider initializes fresh
+  // with the tokens already in storage — eliminates the race condition
+  // where authState briefly shows "not authenticated" after callback.
+  window.location.replace(toRelativeUrl(originalUri || '/', window.location.origin));
+};
 
+function App() {
   return (
     <ErrorBoundary>
       <Security oktaAuth={oktaAuth} restoreOriginalUri={restoreOriginalUri}>
