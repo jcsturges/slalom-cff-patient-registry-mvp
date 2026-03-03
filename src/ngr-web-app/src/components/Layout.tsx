@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Alert, Box, Snackbar } from '@mui/material';
+import { useOktaAuth } from '@okta/okta-react';
+import { Alert, Box, Button, Snackbar, Typography } from '@mui/material';
 import { GlobalHeader } from './GlobalHeader';
 import { NavigationBar } from './NavigationBar';
 import { AppBreadcrumbs } from './Breadcrumbs';
@@ -10,52 +11,76 @@ import { ContactUsDialog } from './ContactUsDialog';
 import { useSessionMonitor } from '../hooks/useSessionMonitor';
 import { useUserSync } from '../hooks/useUserSync';
 
-/** Height of the AppBar + NavigationBar combined */
 const HEADER_HEIGHT = 64;
 const NAV_HEIGHT = 44;
 const TOTAL_TOP_OFFSET = HEADER_HEIGHT + NAV_HEIGHT;
 
 export function Layout() {
+  const { oktaAuth, authState } = useOktaAuth();
   const { sessionExpired } = useSessionMonitor();
   useUserSync();
 
   const [helpOpen, setHelpOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
 
+  // If not authenticated, show a simple login prompt — NO automatic redirect.
+  // This eliminates any possibility of a redirect loop.
+  if (authState && !authState.isAuthenticated) {
+    return (
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="100vh" gap={3}>
+        <Typography variant="h4">CFF Registry</Typography>
+        <Typography color="text.secondary">You are not logged in.</Typography>
+        <Button
+          variant="contained"
+          size="large"
+          onClick={() => {
+            const uri = window.location.pathname + window.location.search;
+            void oktaAuth.signInWithRedirect({ originalUri: uri });
+          }}
+        >
+          Log In with Okta
+        </Button>
+        <Typography variant="caption" color="text.disabled">
+          authState: {JSON.stringify({ isAuthenticated: authState?.isAuthenticated, isPending: authState?.isPending })}
+          {' | '}token: {oktaAuth.getAccessToken() ? 'exists' : 'none'}
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Still loading auth state — show nothing to avoid flash
+  if (!authState) {
+    return (
+      <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" minHeight="100vh" gap={2}>
+        <Typography color="text.secondary">Loading...</Typography>
+        <Typography variant="caption" color="text.disabled">
+          authState: null | token: {oktaAuth.getAccessToken() ? 'exists' : 'none'}
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Authenticated — render the full app
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <SkipNavLink />
-
-      {/* ── Global Header ──────────────────────────────────────── */}
       <GlobalHeader />
-
-      {/* ── Navigation Bar ─────────────────────────────────────── */}
       <NavigationBar onHelpClick={() => setHelpOpen(true)} />
 
-      {/* ── Main Content ───────────────────────────────────────── */}
       <Box
         component="main"
         id="main-content"
         tabIndex={-1}
         role="main"
-        sx={{
-          flexGrow: 1,
-          pt: `${TOTAL_TOP_OFFSET + 24}px`,
-          px: 3,
-          pb: 3,
-        }}
+        sx={{ flexGrow: 1, pt: `${TOTAL_TOP_OFFSET + 24}px`, px: 3, pb: 3 }}
       >
         <AppBreadcrumbs />
         <Outlet context={{ openContact: () => setContactOpen(true) }} />
       </Box>
 
-      {/* ── Help Modal ─────────────────────────────────────────── */}
       <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
-
-      {/* ── Contact Us Dialog ──────────────────────────────────── */}
       <ContactUsDialog open={contactOpen} onClose={() => setContactOpen(false)} />
 
-      {/* ── Session expiry notification ────────────────────────── */}
       <Snackbar open={sessionExpired} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
         <Alert severity="warning" variant="filled">
           Your session has expired. Redirecting to login...

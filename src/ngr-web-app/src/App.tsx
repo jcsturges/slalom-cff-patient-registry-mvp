@@ -1,6 +1,5 @@
 import { Security } from '@okta/okta-react';
 import { OktaAuth, toRelativeUrl } from '@okta/okta-auth-js';
-import { useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { theme } from './theme';
@@ -14,16 +13,19 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
     },
   },
 });
 
 function App() {
-  const navigate = useNavigate();
-
   const restoreOriginalUri = async (_oktaAuth: OktaAuth, originalUri: string) => {
-    navigate(toRelativeUrl(originalUri || '/', window.location.origin), { replace: true });
+    // Use window.location instead of React Router navigate().
+    // A full page load ensures the Security provider initializes fresh
+    // with the tokens already in storage — eliminates the race condition
+    // where authState briefly shows "not authenticated" after callback.
+    const url = toRelativeUrl(originalUri || '/', window.location.origin);
+    window.location.replace(url);
   };
 
   return (

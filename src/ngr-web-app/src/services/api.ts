@@ -13,10 +13,7 @@ function authHeaders(): Record<string, string> {
  */
 async function handleResponse<T>(res: Response): Promise<T> {
   if (res.status === 401) {
-    const currentUri = window.location.pathname + window.location.search;
-    await oktaAuth.signInWithRedirect({ originalUri: currentUri });
-    // Return a never-resolving promise so callers don't proceed
-    return new Promise<T>(() => {});
+    throw new Error('Unauthorized');
   }
   if (!res.ok) {
     const text = await res.text();
@@ -27,9 +24,7 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 async function handleVoidResponse(res: Response): Promise<void> {
   if (res.status === 401) {
-    const currentUri = window.location.pathname + window.location.search;
-    await oktaAuth.signInWithRedirect({ originalUri: currentUri });
-    return new Promise<void>(() => {});
+    throw new Error('Unauthorized');
   }
   if (!res.ok) {
     const text = await res.text();

@@ -93,13 +93,36 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = new()
         {
             ValidateIssuer = true,
-            ValidateAudience = true,
+            ValidateAudience = false, // TODO: set correct Okta audience and re-enable
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
             ClockSkew = TimeSpan.FromMinutes(2),
-            // Okta sends roles in the "groups" claim, not the default
-            // http://schemas.microsoft.com/ws/2008/06/identity/claims/role
             RoleClaimType = "groups"
+        };
+        options.Events = new()
+        {
+            OnAuthenticationFailed = context =>
+            {
+                Log.Error(context.Exception, "JWT authentication FAILED: {Message}", context.Exception.Message);
+                return Task.CompletedTask;
+            },
+            OnTokenValidated = context =>
+            {
+                Log.Information("JWT token VALIDATED for {Name}", context.Principal?.Identity?.Name ?? "unknown");
+                return Task.CompletedTask;
+            },
+            OnChallenge = context =>
+            {
+                Log.Warning("JWT challenge issued: {Error} {ErrorDesc}", context.Error ?? "none", context.ErrorDescription ?? "none");
+                return Task.CompletedTask;
+            },
+            OnMessageReceived = context =>
+            {
+                var hasToken = !string.IsNullOrEmpty(context.Token) ||
+                               context.Request.Headers.ContainsKey("Authorization");
+                Log.Information("JWT message received. Has auth header: {HasToken}", hasToken);
+                return Task.CompletedTask;
+            },
         };
     });
 

@@ -11,13 +11,10 @@ export function useSessionMonitor() {
   const [sessionExpired, setSessionExpired] = useState(false);
 
   const redirectToLogin = useCallback(() => {
-    const currentUri = window.location.pathname + window.location.search;
+    // Just set the flag — the UI will show a notification.
+    // Don't auto-redirect; let the user click login again.
     setSessionExpired(true);
-    // Brief delay so the snackbar is visible before redirect
-    setTimeout(() => {
-      void oktaAuth.signInWithRedirect({ originalUri: currentUri });
-    }, 2000);
-  }, [oktaAuth]);
+  }, []);
 
   useEffect(() => {
     const tokenManager = oktaAuth.tokenManager;
