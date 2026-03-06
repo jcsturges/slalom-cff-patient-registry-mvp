@@ -9,9 +9,11 @@ import { SkipNavLink } from './SkipNavLink';
 import { HelpModal } from './HelpModal';
 import { ContactUsDialog } from './ContactUsDialog';
 import { ImpersonationBanner } from './ImpersonationBanner';
+import { ErrorBoundary } from './ErrorBoundary';
 import { ImpersonationProvider } from '../contexts/ImpersonationContext';
 import { useSessionMonitor } from '../hooks/useSessionMonitor';
 import { useUserSync } from '../hooks/useUserSync';
+import { useAnalytics } from '../hooks/useAnalytics';
 
 const HEADER_HEIGHT = 64;
 const NAV_HEIGHT = 44;
@@ -21,6 +23,7 @@ export function Layout() {
   const { oktaAuth, authState } = useOktaAuth();
   const { sessionExpired } = useSessionMonitor();
   useUserSync();
+  useAnalytics('Layout');
 
   const [helpOpen, setHelpOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
@@ -71,7 +74,9 @@ export function Layout() {
         sx={{ flexGrow: 1, pt: `${TOTAL_TOP_OFFSET + 24}px`, px: 3, pb: 3 }}
       >
         <AppBreadcrumbs />
-        <Outlet context={{ openContact: () => setContactOpen(true) }} />
+        <ErrorBoundary>
+          <Outlet context={{ openContact: () => setContactOpen(true) }} />
+        </ErrorBoundary>
       </Box>
 
       <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />

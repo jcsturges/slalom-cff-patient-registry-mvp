@@ -165,14 +165,18 @@ public class ReportingService : IReportingService
 
         var execution = new ReportExecution
         {
-            SavedReportId = dto.SavedReportId,
-            ReportType = dto.ReportType ?? "custom",
-            ExecutedBy = executedBy,
-            ProgramId = dto.ProgramId,
-            ResultDataJson = JsonSerializer.Serialize(rows),
-            RecordCount = rows.Count,
-            ExecutionTimeMs = (int)sw.ElapsedMilliseconds,
-            ExecutedAt = DateTime.UtcNow,
+            SavedReportId    = dto.SavedReportId,
+            ReportType       = dto.ReportType ?? "custom",
+            ExecutedBy       = executedBy,
+            ProgramId        = dto.ProgramId,
+            ResultDataJson   = JsonSerializer.Serialize(rows),
+            RecordCount      = rows.Count,
+            ExecutionTimeMs  = (int)sw.ElapsedMilliseconds,
+            ExecutedAt       = DateTime.UtcNow,
+            OutputMode       = "screen",
+            Status           = "Success",
+            // Parameters: log filter keys only — no PHI values
+            ParametersJson   = JsonSerializer.Serialize(new { programId = dto.ProgramId, reportType = dto.ReportType }),
         };
 
         _context.ReportExecutions.Add(execution);
@@ -221,8 +225,9 @@ public class ReportingService : IReportingService
         }).ToList();
 
         sw.Stop();
-        return BuildResult("Incomplete Records", "incomplete_records", executedBy, rows,
-            new[] { "cffId", "firstName", "lastName", "formType", "status", "lastModified" }, sw);
+        return await BuildResultAsync("Incomplete Records", "incomplete_records", executedBy, rows,
+            new[] { "cffId", "firstName", "lastName", "formType", "status", "lastModified" }, sw,
+            JsonSerializer.Serialize(new { programId, reportingYear }));
     }
 
     public async Task<ReportResultDto> RunPatientsDueVisitReportAsync(int programId, string executedBy)
@@ -256,8 +261,9 @@ public class ReportingService : IReportingService
         }).ToList();
 
         sw.Stop();
-        return BuildResult("Patients Due Visit", "due_visit", executedBy, rows,
-            new[] { "cffId", "firstName", "lastName", "lastSeenDate", "daysSinceLastSeen", "overdue180", "overdue2Years", "diagnosis" }, sw);
+        return await BuildResultAsync("Patients Due Visit", "due_visit", executedBy, rows,
+            new[] { "cffId", "firstName", "lastName", "lastSeenDate", "daysSinceLastSeen", "overdue180", "overdue2Years", "diagnosis" }, sw,
+            JsonSerializer.Serialize(new { programId }));
     }
 
     public async Task<ReportResultDto> RunDiabetesTestingReportAsync(int programId, string executedBy)
@@ -288,8 +294,9 @@ public class ReportingService : IReportingService
             }).ToList();
 
         sw.Stop();
-        return BuildResult("Diabetes Testing", "diabetes_testing", executedBy, rows,
-            new[] { "cffId", "firstName", "lastName", "dateOfBirth", "age", "diagnosis" }, sw);
+        return await BuildResultAsync("Diabetes Testing", "diabetes_testing", executedBy, rows,
+            new[] { "cffId", "firstName", "lastName", "dateOfBirth", "age", "diagnosis" }, sw,
+            JsonSerializer.Serialize(new { programId }));
     }
 
     // ── Admin Reports ────────────────────────────────────────────
@@ -310,7 +317,7 @@ public class ReportingService : IReportingService
         }).ToList();
 
         sw.Stop();
-        return BuildResult("CF Care Program List", "program_list", executedBy, rows,
+        return await BuildResultAsync("CF Care Program List", "program_list", executedBy, rows,
             new[] { "programId", "name", "type", "city", "state", "isActive" }, sw);
     }
 
@@ -332,7 +339,7 @@ public class ReportingService : IReportingService
         }).ToList();
 
         sw.Stop();
-        return BuildResult("Duplicate Record Merge Report", "merge_report", executedBy, rows,
+        return await BuildResultAsync("Duplicate Record Merge Report", "merge_report", executedBy, rows,
             new[] { "entityId", "action", "userEmail", "timestamp" }, sw);
     }
 
@@ -354,7 +361,7 @@ public class ReportingService : IReportingService
         }).ToList();
 
         sw.Stop();
-        return BuildResult("Patient Transfer Report", "transfer_report", executedBy, rows,
+        return await BuildResultAsync("Patient Transfer Report", "transfer_report", executedBy, rows,
             new[] { "entityId", "action", "userEmail", "timestamp" }, sw);
     }
 
@@ -378,7 +385,7 @@ public class ReportingService : IReportingService
         }).ToList();
 
         sw.Stop();
-        return BuildResult("File Upload Report", "file_upload_report", executedBy, rows,
+        return await BuildResultAsync("File Upload Report", "file_upload_report", executedBy, rows,
             new[] { "fileName", "fileType", "programName", "uploadedBy", "uploadedAt", "fileSize" }, sw);
     }
 
@@ -402,8 +409,9 @@ public class ReportingService : IReportingService
         }).ToList();
 
         sw.Stop();
-        return BuildResult("User Management Audit", "user_management_audit", executedBy, rows,
-            new[] { "action", "userEmail", "timestamp", "entityId" }, sw);
+        return await BuildResultAsync("User Management Audit", "user_management_audit", executedBy, rows,
+            new[] { "action", "userEmail", "timestamp", "entityId" }, sw,
+            JsonSerializer.Serialize(new { startDate, endDate }));
     }
 
     public async Task<ReportResultDto> RunDownloadAuditAsync(
@@ -426,8 +434,9 @@ public class ReportingService : IReportingService
         }).ToList();
 
         sw.Stop();
-        return BuildResult("Download Details Audit", "download_audit", executedBy, rows,
-            new[] { "reportName", "reportType", "userEmail", "patientCount", "format", "downloadedAt" }, sw);
+        return await BuildResultAsync("Download Details Audit", "download_audit", executedBy, rows,
+            new[] { "reportName", "reportType", "userEmail", "patientCount", "format", "downloadedAt" }, sw,
+            JsonSerializer.Serialize(new { startDate, endDate }));
     }
 
     // ── Download ─────────────────────────────────────────────────
@@ -440,7 +449,7 @@ public class ReportingService : IReportingService
 
         var rows = JsonSerializer.Deserialize<List<Dictionary<string, JsonElement>>>(execution.ResultDataJson) ?? new();
 
-        // Log the download
+        // Log the download and update execution metadata (12-003)
         _context.ReportDownloadLogs.Add(new ReportDownloadLog
         {
             ReportName = execution.ReportType,
@@ -452,6 +461,11 @@ public class ReportingService : IReportingService
             Format = format,
             DownloadedAt = DateTime.UtcNow,
         });
+
+        // Update execution record with download metadata
+        execution.OutputMode = "download";
+        execution.FileFormat = format;
+
         await _context.SaveChangesAsync();
 
         // Generate CSV
@@ -468,24 +482,52 @@ public class ReportingService : IReportingService
             sb.AppendLine(string.Join(",", values));
         }
 
-        return Encoding.UTF8.GetBytes(sb.ToString());
+        var bytes = Encoding.UTF8.GetBytes(sb.ToString());
+
+        // Record file size on the execution (12-003)
+        execution.FileSizeBytes = bytes.Length;
+        await _context.SaveChangesAsync();
+
+        return bytes;
     }
 
     // ── Helpers ───────────────────────────────────────────────────
 
-    private ReportResultDto BuildResult(string title, string type, string executedBy,
-        List<Dictionary<string, object?>> rows, string[] columns, Stopwatch sw)
+    /// <summary>
+    /// Persists a ReportExecution record and returns the result DTO.
+    /// Used by all pre-defined report methods to satisfy 12-003 logging requirements.
+    /// </summary>
+    private async Task<ReportResultDto> BuildResultAsync(
+        string title, string type, string executedBy,
+        List<Dictionary<string, object?>> rows, string[] columns, Stopwatch sw,
+        string? parametersJson = null)
     {
+        var execution = new ReportExecution
+        {
+            ReportType      = type,
+            ExecutedBy      = executedBy,
+            ResultDataJson  = JsonSerializer.Serialize(rows),
+            RecordCount     = rows.Count,
+            ExecutionTimeMs = (int)sw.ElapsedMilliseconds,
+            ExecutedAt      = DateTime.UtcNow,
+            OutputMode      = "screen",
+            Status          = "Success",
+            ParametersJson  = parametersJson,
+        };
+        _context.ReportExecutions.Add(execution);
+        await _context.SaveChangesAsync();
+
         return new ReportResultDto
         {
-            ReportTitle = title,
-            ReportType = type,
-            ExecutedBy = executedBy,
-            ExecutedAt = DateTime.UtcNow,
-            RecordCount = rows.Count,
+            ExecutionId     = execution.Id,
+            ReportTitle     = title,
+            ReportType      = type,
+            ExecutedBy      = executedBy,
+            ExecutedAt      = execution.ExecutedAt,
+            RecordCount     = rows.Count,
             ExecutionTimeMs = (int)sw.ElapsedMilliseconds,
-            Columns = columns.ToList(),
-            Rows = rows,
+            Columns         = columns.ToList(),
+            Rows            = rows,
         };
     }
 

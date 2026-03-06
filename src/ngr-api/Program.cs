@@ -41,6 +41,7 @@ if (!string.IsNullOrEmpty(builder.Configuration["KeyVault:VaultUri"]))
 }
 
 // Add services to the container
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddControllers();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
@@ -209,8 +210,8 @@ if (app.Environment.IsDevelopment())
     try
     {
         dbContext.Database.EnsureCreated();
-        // Probe a table added in the latest schema revision; throws if missing.
-        _ = await dbContext.ImpersonationSessions.AnyAsync();
+        // Probe the most recently added table; throws if missing (Epic 12 added UserEvents).
+        _ = await dbContext.UserEvents.AnyAsync();
     }
     catch
     {
@@ -251,9 +252,31 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Health check endpoint
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", timestamp = DateTime.UtcNow }))
-   .AllowAnonymous();
+// Health check endpoint — probes DB connectivity (12-006)
+app.MapGet("/health", async (NgrApi.Data.ApplicationDbContext db) =>
+{
+    bool dbOk;
+    long dbMs;
+    try
+    {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        await db.Database.ExecuteSqlRawAsync("SELECT 1");
+        sw.Stop();
+        dbOk = true;
+        dbMs = sw.ElapsedMilliseconds;
+    }
+    catch
+    {
+        dbOk = false;
+        dbMs = -1;
+    }
+
+    var status = dbOk ? "healthy" : "degraded";
+    return dbOk
+        ? Results.Ok(new { status, timestamp = DateTime.UtcNow, database = new { ok = dbOk, latencyMs = dbMs } })
+        : Results.Json(new { status, timestamp = DateTime.UtcNow, database = new { ok = dbOk, latencyMs = dbMs } }, statusCode: 503);
+})
+.AllowAnonymous();
 
 try
 {

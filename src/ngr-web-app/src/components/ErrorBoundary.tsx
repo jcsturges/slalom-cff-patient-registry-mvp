@@ -1,5 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Button, Paper, Typography } from '@mui/material';
+import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 
 interface Props {
   children: ReactNode;
@@ -7,44 +8,68 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error: Error | null;
+  errorId: string | null;
 }
 
+/**
+ * Application-level error boundary (12-007).
+ * Renders a friendly, non-technical message with a reference ID and recovery actions.
+ * No PHI or stack traces are displayed to the user.
+ */
 export class ErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false, error: null };
+    this.state = { hasError: false, errorId: null };
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
+  static getDerivedStateFromError(): State {
+    return {
+      hasError: true,
+      errorId: `ERR-${Date.now().toString(36).toUpperCase()}`,
+    };
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    // Log type only — no PHI or user data in logs (12-007 AC)
+    console.error('[ErrorBoundary]', error.name, errorInfo.componentStack?.split('\n')[0]);
   }
 
   render() {
     if (this.state.hasError) {
       return (
-        <Box
-          display="flex"
-          flexDirection="column"
-          justifyContent="center"
-          alignItems="center"
-          minHeight="100vh"
-          gap={2}
-        >
-          <Typography variant="h5">Something went wrong.</Typography>
-          <Typography variant="body2" color="text.secondary">
-            {this.state.error?.message ?? 'An unexpected error occurred.'}
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={() => this.setState({ hasError: false, error: null })}
+        <Box display="flex" alignItems="center" justifyContent="center" minHeight="60vh" px={3}>
+          <Paper
+            elevation={0}
+            sx={{ maxWidth: 480, p: 4, textAlign: 'center', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}
           >
-            Try again
-          </Button>
+            <ErrorOutlineIcon sx={{ fontSize: 56, color: 'error.main', mb: 2 }} />
+
+            <Typography variant="h5" fontWeight={700} gutterBottom>
+              Something went wrong
+            </Typography>
+
+            <Typography variant="body1" color="text.secondary" mb={1}>
+              An unexpected error occurred. Your data has not been affected.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" mb={3}>
+              Please return to the dashboard or contact support if the problem continues.
+            </Typography>
+
+            {this.state.errorId && (
+              <Typography variant="caption" color="text.disabled" display="block" mb={3}>
+                Reference: {this.state.errorId}
+              </Typography>
+            )}
+
+            <Box display="flex" gap={2} justifyContent="center">
+              <Button variant="outlined" onClick={() => this.setState({ hasError: false, errorId: null })}>
+                Try Again
+              </Button>
+              <Button variant="contained" onClick={() => { window.location.href = '/'; }}>
+                Go to Dashboard
+              </Button>
+            </Box>
+          </Paper>
         </Box>
       );
     }

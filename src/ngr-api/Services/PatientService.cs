@@ -14,15 +14,18 @@ public class PatientService : IPatientService
     private readonly ApplicationDbContext _context;
     private readonly IMapper _mapper;
     private readonly ILogger<PatientService> _logger;
+    private readonly IAuditService _auditService;
 
     public PatientService(
         ApplicationDbContext context,
         IMapper mapper,
-        ILogger<PatientService> logger)
+        ILogger<PatientService> logger,
+        IAuditService auditService)
     {
         _context = context;
         _mapper = mapper;
         _logger = logger;
+        _auditService = auditService;
     }
 
     // ── Query Methods ────────────────────────────────────────────
@@ -194,6 +197,9 @@ public class PatientService : IPatientService
             patient.DeceasedDate ??= DateTime.UtcNow;
             patient.VitalStatus = "Deceased";
         }
+
+        // Log field-level changes BEFORE SaveChanges so ChangeTracker has original values (12-002)
+        await _auditService.LogChangeTrackingAsync(_context, updatedBy, updatedBy, null);
 
         await _context.SaveChangesAsync();
         return MapToDto(patient, null);

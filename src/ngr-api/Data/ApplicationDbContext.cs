@@ -37,6 +37,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<EmrFieldMapping> EmrFieldMappings => Set<EmrFieldMapping>();
     public DbSet<InstitutionMrnCrosswalk> InstitutionMrnCrosswalks => Set<InstitutionMrnCrosswalk>();
     public DbSet<SftpConfig> SftpConfigs => Set<SftpConfig>();
+    public DbSet<UserEvent> UserEvents => Set<UserEvent>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<DatabaseLock> DatabaseLocks => Set<DatabaseLock>();
     public DbSet<DatabaseLockSkippedForm> DatabaseLockSkippedForms => Set<DatabaseLockSkippedForm>();
@@ -429,6 +430,11 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.ExecutedBy).HasMaxLength(255).IsRequired();
             entity.Property(e => e.ResultDataJson).HasColumnType("nvarchar(max)").IsRequired();
             entity.Property(e => e.ExecutedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.ParametersJson).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.OutputMode).HasMaxLength(20).IsRequired().HasDefaultValue("screen");
+            entity.Property(e => e.FileFormat).HasMaxLength(10);
+            entity.Property(e => e.Status).HasMaxLength(20).IsRequired().HasDefaultValue("Success");
+            entity.Property(e => e.ErrorMessage).HasMaxLength(2000);
 
             entity.HasOne(e => e.SavedReport)
                   .WithMany()
@@ -550,6 +556,22 @@ public class ApplicationDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.ProgramId)
                   .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // UserEvent Configuration (12-004: User Interaction Analytics)
+        modelBuilder.Entity<UserEvent>(entity =>
+        {
+            entity.ToTable("UserEvents");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.OccurredAt);
+            entity.HasIndex(e => e.UserId);
+            entity.Property(e => e.UserId).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.SessionId).HasMaxLength(100);
+            entity.Property(e => e.EventType).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Page).HasMaxLength(500);
+            entity.Property(e => e.Component).HasMaxLength(200);
+            entity.Property(e => e.PropertiesJson).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.OccurredAt).HasDefaultValueSql("GETUTCDATE()");
         });
 
         // AuditLog Configuration

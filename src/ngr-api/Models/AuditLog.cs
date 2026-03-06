@@ -1,6 +1,35 @@
 namespace NgrApi.Models;
 
 /// <summary>
+/// Lightweight user interaction event for usability analytics (12-004).
+/// No PHI — only opaque user/session IDs, page paths, and component names.
+/// </summary>
+public class UserEvent
+{
+    public int Id { get; set; }
+
+    /// <summary>Opaque user identifier (Okta sub / OktaId)</summary>
+    public string UserId { get; set; } = string.Empty;
+
+    /// <summary>Browser session identifier (generated on login, stored in sessionStorage)</summary>
+    public string? SessionId { get; set; }
+
+    /// <summary>"page_view", "button_click", "form_submit", "login", "logout", "time_on_page"</summary>
+    public string EventType { get; set; } = string.Empty;
+
+    /// <summary>Route/path of the page (e.g. "/patients", "/reports/builder")</summary>
+    public string? Page { get; set; }
+
+    /// <summary>UI component that fired the event (e.g. "ImpersonationBanner", "PatientListPage")</summary>
+    public string? Component { get; set; }
+
+    /// <summary>JSON properties bag (no PHI — keys like "reportType", "durationMs")</summary>
+    public string? PropertiesJson { get; set; }
+
+    public DateTime OccurredAt { get; set; }
+}
+
+/// <summary>
 /// Represents an audit log entry
 /// </summary>
 public class AuditLog

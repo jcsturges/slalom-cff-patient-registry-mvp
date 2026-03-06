@@ -109,6 +109,12 @@ iac/runbook.md           # Operations runbook
 - **DataTable:** Reusable `DataTable.tsx` component with pagination (25/50/100), search, sort (asc/desc, respects data types). Supports both client-side and server-side modes.
 - **Responsive design:** Desktop (≥1366px) full horizontal nav, Tablet (768-1365px) hamburger menu, Mobile (<768px) `MobileGuard` blocks with desktop-required message.
 - **Accessibility:** `SkipNavLink` for screen readers, ARIA labels on all nav items, keyboard-navigable table rows, focus management.
+- **Audit logging:** `AuditService` auto-populates impersonation context from `IHttpContextAccessor` (reads `HttpContext.Items["IsImpersonating"]`, `ActingAdminId`, `X-Impersonation-Session-Id` header). `LogChangeTrackingAsync(DbContext, userId, email, ip)` diffs EF ChangeTracker entries and logs field-level changes (PHI fields excluded). `AuditLogsController` at `GET /api/audit/logs` (paginated, filterable) and `GET /api/audit/patients/{cffId}`. `IHttpContextAccessor` registered via `builder.Services.AddHttpContextAccessor()`.
+- **Audit + analytics export:** `GET /api/audit/export` and `GET /api/analytics/export` stream CSV for date ranges. Foundation Analyst only.
+- **User interaction analytics:** `UserEvent` model (no PHI — opaque userId, page path, component, eventType, PropertiesJson). `UserEventsController` at `POST /api/analytics/events` (batch, any auth). Frontend: `analyticsService` (2s batch flush), `useAnalytics` hook (page views, time-on-page), wired into `Layout`.
+- **Report usage tracking:** `ReportExecution` extended with `ParametersJson`, `OutputMode`, `FileFormat`, `FileSizeBytes`, `Status`, `ErrorMessage`. All pre-defined reports now persist executions via `BuildResultAsync`. Downloads update `OutputMode/FileFormat/FileSizeBytes` on the execution record.
+- **Monitoring:** `GET /api/admin/monitoring` (FoundationAnalyst) returns uptime, DB latency, entity counts, last-24h audit/error counts. `MonitoringPage.tsx` at `/admin/monitoring` with 30s auto-refresh. `/health` extended with DB probe + latency.
+- **Error handling:** `ExceptionHandlingMiddleware` returns RFC 7807 Problem Details (`application/problem+json`) with `type`, `title`, `status`, `detail`, `instance`, `traceId`. No PHI or stack traces. `ErrorBoundary.tsx` upgraded with opaque error reference + "Go to Dashboard" button; wired into `Layout.tsx` around `<Outlet>`.
 
 ---
 
