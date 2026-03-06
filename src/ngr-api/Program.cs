@@ -188,6 +188,9 @@ builder.Services.AddScoped<IHelpPageService, HelpPageService>();
 builder.Services.AddScoped<IContactRequestService, ContactRequestService>();
 builder.Services.AddScoped<IDatabaseLockService, DatabaseLockService>();
 builder.Services.AddScoped<IImpersonationService, ImpersonationService>();
+builder.Services.AddScoped<IDataFeedService, DataFeedService>();
+builder.Services.AddScoped<IMigrationService, MigrationService>();
+builder.Services.AddScoped<IMigrationValidationService, MigrationValidationService>();
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));
@@ -210,8 +213,8 @@ if (app.Environment.IsDevelopment())
     try
     {
         dbContext.Database.EnsureCreated();
-        // Probe the most recently added table; throws if missing (Epic 12 added UserEvents).
-        _ = await dbContext.UserEvents.AnyAsync();
+        // Probe the most recently added table; throws if missing (Epic 13 added MigrationRuns).
+        _ = await dbContext.MigrationRuns.AnyAsync();
     }
     catch
     {
@@ -227,6 +230,9 @@ if (app.Environment.IsDevelopment())
 
     var emrMappingService = scope.ServiceProvider.GetRequiredService<IEmrMappingService>();
     await emrMappingService.EnsureDefaultMappingsAsync();
+
+    var feedService = scope.ServiceProvider.GetRequiredService<IDataFeedService>();
+    await feedService.EnsureDefaultMappingsAsync("system");
 }
 
 // Configure the HTTP request pipeline

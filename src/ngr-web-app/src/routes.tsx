@@ -24,6 +24,8 @@ import { EmrUploadPage } from './pages/EmrUploadPage';
 import { DatabaseLockPage } from './pages/admin/DatabaseLockPage';
 import { UserManagementPage } from './pages/admin/UserManagementPage';
 import { MonitoringPage } from './pages/admin/MonitoringPage';
+import { DataFeedPage } from './pages/admin/DataFeedPage';
+import { MigrationPage } from './pages/admin/MigrationPage';
 import { AuthGate } from './components/AuthGate';
 
 export function AppRoutes() {
@@ -80,6 +82,8 @@ export function AppRoutes() {
           <Route path="/admin/analytics" element={<PlaceholderPage title="User Analytics" />} />
           <Route path="/admin/monitoring" element={<MonitoringPage />} />
           <Route path="/admin/database-lock" element={<DatabaseLockPage />} />
+          <Route path="/admin/data-feed" element={<DataFeedPage />} />
+          <Route path="/admin/migration" element={<MigrationPage />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

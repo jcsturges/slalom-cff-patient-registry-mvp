@@ -49,6 +49,13 @@ public class Patient
     // ── Primary program (legacy FK, kept for backward compat) ────
     public int CareProgramId { get; set; }
 
+    // ── Migration provenance (13-006) ────────────────────────────
+    /// <summary>True when this record was created by the historical migration process</summary>
+    public bool IsMigrated { get; set; }
+
+    /// <summary>Stable identifier from the source system (e.g. portCF numeric ID)</summary>
+    public string? SourceSystemId { get; set; }
+
     // ── Audit ────────────────────────────────────────────────────
     public DateTime CreatedAt { get; set; }
     public string CreatedBy { get; set; } = string.Empty;

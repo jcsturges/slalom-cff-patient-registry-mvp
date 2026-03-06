@@ -39,6 +39,13 @@ public class PatientFile
     public DateTime UploadedAt { get; set; }
     public string UploadedBy { get; set; } = string.Empty;
 
+    // ── Migration provenance (13-007) ────────────────────────────
+    /// <summary>True when this file was migrated from portCF via the file migration process</summary>
+    public bool IsMigrated { get; set; }
+
+    /// <summary>SHA-256 hash of file content for integrity verification (13-008)</summary>
+    public string? ContentHash { get; set; }
+
     // Navigation properties
     public Patient Patient { get; set; } = null!;
     public CareProgram Program { get; set; } = null!;

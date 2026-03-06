@@ -55,6 +55,16 @@ export const FOUNDATION_NAV_ITEMS: NavItem[] = [
       { label: 'Database Lock', path: '/admin/database-lock' },
     ],
   },
+  {
+    label: 'System',
+    path: '/admin/monitoring',
+    visibleWhen: (roles) => roles.isSystemAdmin,
+    children: [
+      { label: 'Monitoring', path: '/admin/monitoring' },
+      { label: 'Data Feed', path: '/admin/data-feed' },
+      { label: 'Migration', path: '/admin/migration' },
+    ],
+  },
   { label: 'User Analytics', path: '/admin/analytics' },
   { label: 'Reporting', path: '/reports' },
   { label: 'Data Export', path: '/export' },

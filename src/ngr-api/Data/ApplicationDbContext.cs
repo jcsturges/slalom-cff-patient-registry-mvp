@@ -39,6 +39,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<SftpConfig> SftpConfigs => Set<SftpConfig>();
     public DbSet<UserEvent> UserEvents => Set<UserEvent>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<FeedRun> FeedRuns => Set<FeedRun>();
+    public DbSet<FeedFieldMapping> FeedFieldMappings => Set<FeedFieldMapping>();
+    public DbSet<DeletionTombstone> DeletionTombstones => Set<DeletionTombstone>();
+    public DbSet<MigrationRun> MigrationRuns => Set<MigrationRun>();
     public DbSet<DatabaseLock> DatabaseLocks => Set<DatabaseLock>();
     public DbSet<DatabaseLockSkippedForm> DatabaseLockSkippedForms => Set<DatabaseLockSkippedForm>();
     public DbSet<ImpersonationSession> ImpersonationSessions => Set<ImpersonationSession>();
@@ -72,6 +76,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.VitalStatus).HasMaxLength(20).HasDefaultValue("Alive");
             entity.Property(e => e.ConsentWithdrawn).HasDefaultValue(false);
             entity.Property(e => e.IsDeceased).HasDefaultValue(false);
+            entity.Property(e => e.IsMigrated).HasDefaultValue(false);
+            entity.Property(e => e.SourceSystemId).HasMaxLength(100);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
             entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
 
@@ -157,6 +163,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.OtherFileTypeDescription).HasMaxLength(200);
             entity.Property(e => e.UploadedBy).HasMaxLength(255).IsRequired();
             entity.Property(e => e.UploadedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.IsMigrated).HasDefaultValue(false);
+            entity.Property(e => e.ContentHash).HasMaxLength(64);
 
             entity.HasOne(e => e.Patient)
                   .WithMany()
@@ -626,6 +634,69 @@ public class ApplicationDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.FormSubmissionId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // FeedRun Configuration (13-001)
+        modelBuilder.Entity<FeedRun>(entity =>
+        {
+            entity.ToTable("FeedRuns");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.StartedAt);
+            entity.HasIndex(e => e.Status);
+            entity.Property(e => e.RunType).HasMaxLength(10).IsRequired();
+            entity.Property(e => e.Status).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.TriggeredBy).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.BlobPath).HasMaxLength(1000);
+            entity.Property(e => e.ReconciliationJson).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.ErrorMessage).HasMaxLength(2000);
+            entity.Property(e => e.StartedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // FeedFieldMapping Configuration (13-001)
+        modelBuilder.Entity<FeedFieldMapping>(entity =>
+        {
+            entity.ToTable("FeedFieldMappings");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.NgrEntity, e.NgrProperty, e.Version }).IsUnique();
+            entity.Property(e => e.NgrEntity).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.NgrProperty).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.CffColumnName).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.DataType).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.TransformHint).HasMaxLength(100);
+            entity.Property(e => e.CreatedBy).HasMaxLength(255);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // DeletionTombstone Configuration (13-002)
+        modelBuilder.Entity<DeletionTombstone>(entity =>
+        {
+            entity.ToTable("DeletionTombstones");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.EntityType, e.EntityId });
+            entity.HasIndex(e => e.RetainUntil); // for purge queries
+            entity.Property(e => e.EntityType).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.EntityId).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.SourceSystemId).HasMaxLength(100);
+            entity.Property(e => e.DeletedReason).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.DeletedBy).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.DeletedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // MigrationRun Configuration (13-006)
+        modelBuilder.Entity<MigrationRun>(entity =>
+        {
+            entity.ToTable("MigrationRuns");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Phase);
+            entity.HasIndex(e => e.Status);
+            entity.Property(e => e.Phase).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.Status).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.TriggeredBy).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.ErrorsJson).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.ValidationReportJson).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.ErrorMessage).HasMaxLength(2000);
+            entity.Property(e => e.StartedAt).HasDefaultValueSql("GETUTCDATE()");
         });
 
         // ImpersonationSession Configuration
