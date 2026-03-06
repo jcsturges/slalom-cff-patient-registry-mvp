@@ -34,6 +34,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<ReportDownloadLog> ReportDownloadLogs => Set<ReportDownloadLog>();
     public DbSet<SavedDownloadDefinition> SavedDownloadDefinitions => Set<SavedDownloadDefinition>();
     public DbSet<ImportJob> ImportJobs => Set<ImportJob>();
+    public DbSet<EmrFieldMapping> EmrFieldMappings => Set<EmrFieldMapping>();
+    public DbSet<InstitutionMrnCrosswalk> InstitutionMrnCrosswalks => Set<InstitutionMrnCrosswalk>();
+    public DbSet<SftpConfig> SftpConfigs => Set<SftpConfig>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -477,6 +480,73 @@ public class ApplicationDbContext : DbContext
                   .WithMany()
                   .HasForeignKey(e => e.FormDefinitionId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // EmrFieldMapping Configuration
+        modelBuilder.Entity<EmrFieldMapping>(entity =>
+        {
+            entity.ToTable("EmrFieldMappings");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ProgramId, e.CsvColumnName, e.FormType }).IsUnique();
+            entity.Property(e => e.CsvColumnName).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.FormType).HasMaxLength(50).IsRequired();
+            entity.Property(e => e.FieldPath).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.DataType).HasMaxLength(20).IsRequired().HasDefaultValue("string");
+            entity.Property(e => e.TransformHint).HasMaxLength(100);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Program)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProgramId)
+                  .OnDelete(DeleteBehavior.Cascade)
+                  .IsRequired(false);
+        });
+
+        // InstitutionMrnCrosswalk Configuration
+        modelBuilder.Entity<InstitutionMrnCrosswalk>(entity =>
+        {
+            entity.ToTable("InstitutionMrnCrosswalks");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.ProgramId, e.MedicalRecordNumber }).IsUnique();
+            entity.Property(e => e.MedicalRecordNumber).HasMaxLength(100).IsRequired();
+            entity.Property(e => e.CffId).IsRequired();
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Program)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProgramId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Patient)
+                  .WithMany()
+                  .HasForeignKey(e => e.PatientId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // SftpConfig Configuration
+        modelBuilder.Entity<SftpConfig>(entity =>
+        {
+            entity.ToTable("SftpConfigs");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ProgramId).IsUnique();
+            entity.Property(e => e.Host).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.Username).HasMaxLength(200).IsRequired();
+            entity.Property(e => e.EncryptedPassword).HasMaxLength(2000).IsRequired();
+            entity.Property(e => e.RemoteDirectory).HasMaxLength(500).IsRequired().HasDefaultValue("/");
+            entity.Property(e => e.FilePattern).HasMaxLength(100).IsRequired().HasDefaultValue("*.csv");
+            entity.Property(e => e.ScheduleCron).HasMaxLength(100).IsRequired().HasDefaultValue("0 2 * * *");
+            entity.Property(e => e.LastRunStatus).HasMaxLength(50);
+            entity.Property(e => e.CreatedBy).HasMaxLength(255);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(255);
+            entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.Program)
+                  .WithMany()
+                  .HasForeignKey(e => e.ProgramId)
+                  .OnDelete(DeleteBehavior.Cascade);
         });
 
         // AuditLog Configuration

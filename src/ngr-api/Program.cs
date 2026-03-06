@@ -173,6 +173,7 @@ builder.Services.AddScoped<IFormService, FormService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IContentService, ContentService>();
 builder.Services.AddScoped<IImportService, ImportService>();
+builder.Services.AddScoped<IEmrMappingService, EmrMappingService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IProgramService, ProgramService>();
 builder.Services.AddScoped<IAuditService, AuditService>();
@@ -199,6 +200,8 @@ if (app.Environment.IsDevelopment())
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.EnsureCreated();
+    var emrMappingService = scope.ServiceProvider.GetRequiredService<IEmrMappingService>();
+    await emrMappingService.EnsureDefaultMappingsAsync();
 }
 
 // Configure the HTTP request pipeline

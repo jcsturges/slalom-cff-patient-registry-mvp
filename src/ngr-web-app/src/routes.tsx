@@ -20,6 +20,7 @@ import { ReportingPage } from './pages/reports/ReportingPage';
 import { ReportBuilderPage } from './pages/reports/ReportBuilderPage';
 import { PreDefinedReportPage } from './pages/reports/PreDefinedReportPage';
 import { DataExportPage } from './pages/DataExportPage';
+import { EmrUploadPage } from './pages/EmrUploadPage';
 import { AuthGate } from './components/AuthGate';
 
 export function AppRoutes() {
@@ -64,7 +65,7 @@ export function AppRoutes() {
           <Route path="/reports/admin" element={<PreDefinedReportPage reportKind="program_list" />} />
           <Route path="/reports/audit" element={<PreDefinedReportPage reportKind="user_management_audit" />} />
           <Route path="/export" element={<DataExportPage />} />
-          <Route path="/import" element={<PlaceholderPage title="EMR Upload" />} />
+          <Route path="/import" element={<EmrUploadPage />} />
           <Route path="/help" element={<PlaceholderPage title="Help" />} />
           <Route path="/user-management" element={<PlaceholderPage title="User Management" />} />
           <Route path="/contact" element={<PlaceholderPage title="Contact Us" />} />
