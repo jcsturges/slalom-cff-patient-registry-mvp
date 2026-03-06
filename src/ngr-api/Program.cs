@@ -185,6 +185,8 @@ builder.Services.AddScoped<IDataExportService, DataExportService>();
 builder.Services.AddScoped<IAnnouncementService, AnnouncementService>();
 builder.Services.AddScoped<IHelpPageService, HelpPageService>();
 builder.Services.AddScoped<IContactRequestService, ContactRequestService>();
+builder.Services.AddScoped<IDatabaseLockService, DatabaseLockService>();
+builder.Services.AddScoped<IImpersonationService, ImpersonationService>();
 
 // Add AutoMapper
 builder.Services.AddAutoMapper(typeof(Program));
@@ -222,6 +224,7 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseMiddleware<RequestLoggingMiddleware>();
 
 app.UseAuthentication();
+app.UseMiddleware<ImpersonationMiddleware>();
 app.UseAuthorization();
 
 app.MapControllers();

@@ -21,6 +21,8 @@ import { ReportBuilderPage } from './pages/reports/ReportBuilderPage';
 import { PreDefinedReportPage } from './pages/reports/PreDefinedReportPage';
 import { DataExportPage } from './pages/DataExportPage';
 import { EmrUploadPage } from './pages/EmrUploadPage';
+import { DatabaseLockPage } from './pages/admin/DatabaseLockPage';
+import { UserManagementPage } from './pages/admin/UserManagementPage';
 import { AuthGate } from './components/AuthGate';
 
 export function AppRoutes() {
@@ -67,7 +69,7 @@ export function AppRoutes() {
           <Route path="/export" element={<DataExportPage />} />
           <Route path="/import" element={<EmrUploadPage />} />
           <Route path="/help" element={<PlaceholderPage title="Help" />} />
-          <Route path="/user-management" element={<PlaceholderPage title="User Management" />} />
+          <Route path="/user-management" element={<UserManagementPage />} />
           <Route path="/contact" element={<PlaceholderPage title="Contact Us" />} />
 
           {/* ── Foundation Admin routes ───────────────────────── */}
@@ -75,7 +77,7 @@ export function AppRoutes() {
           <Route path="/admin/announcements" element={<AnnouncementManagerPage />} />
           <Route path="/admin/help-pages" element={<HelpPageManagerPage />} />
           <Route path="/admin/analytics" element={<PlaceholderPage title="User Analytics" />} />
-          <Route path="/admin/database-lock" element={<PlaceholderPage title="Database Lock" />} />
+          <Route path="/admin/database-lock" element={<DatabaseLockPage />} />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

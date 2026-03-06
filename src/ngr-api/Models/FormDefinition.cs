@@ -88,6 +88,12 @@ public class FormSubmission
     /// <summary>Lock status: Unlocked, Locked</summary>
     public string LockStatus { get; set; } = "Unlocked";
 
+    /// <summary>True when this form has been locked by the annual database lock process</summary>
+    public bool IsLocked { get; set; }
+
+    /// <summary>When this form was locked (UTC)</summary>
+    public DateTime? LockedAt { get; set; }
+
     /// <summary>Combined status for backward compatibility</summary>
     public string Status { get; set; } = "Incomplete";
 

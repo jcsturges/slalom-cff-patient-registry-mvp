@@ -2,9 +2,26 @@ import { oktaAuth } from '../lib/okta';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:5000';
 
+const SESSION_STORAGE_KEY = 'ngr-impersonation-session';
+
 function authHeaders(): Record<string, string> {
   const token = oktaAuth.getAccessToken();
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
+  // Attach impersonation session ID when active
+  try {
+    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (raw) {
+      const session = JSON.parse(raw) as { sessionId: string; expiresAt: string };
+      if (new Date(session.expiresAt) > new Date()) {
+        headers['X-Impersonation-Session-Id'] = session.sessionId;
+      }
+    }
+  } catch {
+    // Ignore parse errors
+  }
+
+  return headers;
 }
 
 /**

@@ -38,6 +38,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<InstitutionMrnCrosswalk> InstitutionMrnCrosswalks => Set<InstitutionMrnCrosswalk>();
     public DbSet<SftpConfig> SftpConfigs => Set<SftpConfig>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<DatabaseLock> DatabaseLocks => Set<DatabaseLock>();
+    public DbSet<DatabaseLockSkippedForm> DatabaseLockSkippedForms => Set<DatabaseLockSkippedForm>();
+    public DbSet<ImpersonationSession> ImpersonationSessions => Set<ImpersonationSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -565,6 +568,59 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.NewValues).HasColumnType("nvarchar(max)");
             entity.Property(e => e.IpAddress).HasMaxLength(50);
             entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(e => e.ActingAdminId).HasMaxLength(255);
+        });
+
+        // DatabaseLock Configuration
+        modelBuilder.Entity<DatabaseLock>(entity =>
+        {
+            entity.ToTable("DatabaseLocks");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.ReportingYear).IsUnique();
+            entity.Property(e => e.ExecutionMode).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.Status).HasMaxLength(20).IsRequired();
+            entity.Property(e => e.InitiatedBy).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.ErrorMessage).HasMaxLength(2000);
+            entity.Property(e => e.InitiatedAt).HasDefaultValueSql("GETUTCDATE()");
+        });
+
+        // DatabaseLockSkippedForm Configuration
+        modelBuilder.Entity<DatabaseLockSkippedForm>(entity =>
+        {
+            entity.ToTable("DatabaseLockSkippedForms");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.DatabaseLockId, e.FormSubmissionId });
+            entity.Property(e => e.SessionUserId).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.SkipReason).HasMaxLength(500).IsRequired();
+            entity.Property(e => e.ResolutionType).HasMaxLength(50);
+            entity.Property(e => e.SkippedAt).HasDefaultValueSql("GETUTCDATE()");
+
+            entity.HasOne(e => e.DatabaseLock)
+                  .WithMany(l => l.SkippedForms)
+                  .HasForeignKey(e => e.DatabaseLockId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.FormSubmission)
+                  .WithMany()
+                  .HasForeignKey(e => e.FormSubmissionId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ImpersonationSession Configuration
+        modelBuilder.Entity<ImpersonationSession>(entity =>
+        {
+            entity.ToTable("ImpersonationSessions");
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.AdminUserId);
+            entity.HasIndex(e => e.TargetUserId);
+            entity.Property(e => e.AdminUserId).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.AdminEmail).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.TargetUserId).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.TargetUserEmail).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.TargetUserName).HasMaxLength(255).IsRequired();
+            entity.Property(e => e.TargetUserGroupsJson).HasColumnType("nvarchar(max)").IsRequired();
+            entity.Property(e => e.EndReason).HasMaxLength(50);
+            entity.Property(e => e.StartedAt).HasDefaultValueSql("GETUTCDATE()");
         });
     }
 }

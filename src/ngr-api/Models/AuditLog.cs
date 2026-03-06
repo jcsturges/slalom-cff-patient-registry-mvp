@@ -15,4 +15,14 @@ public class AuditLog
     public string UserEmail { get; set; } = string.Empty;
     public DateTime Timestamp { get; set; }
     public string? IpAddress { get; set; }
+
+    // ── Impersonation tracking ─────────────────────────────────────────────
+    /// <summary>True when this action was performed during an impersonation session</summary>
+    public bool IsImpersonated { get; set; }
+
+    /// <summary>The Foundation Admin who was acting as the impersonated user (set when IsImpersonated = true)</summary>
+    public string? ActingAdminId { get; set; }
+
+    /// <summary>The impersonation session ID for cross-referencing</summary>
+    public Guid? ImpersonationSessionId { get; set; }
 }

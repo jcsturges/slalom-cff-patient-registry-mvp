@@ -8,6 +8,8 @@ import { AppBreadcrumbs } from './Breadcrumbs';
 import { SkipNavLink } from './SkipNavLink';
 import { HelpModal } from './HelpModal';
 import { ContactUsDialog } from './ContactUsDialog';
+import { ImpersonationBanner } from './ImpersonationBanner';
+import { ImpersonationProvider } from '../contexts/ImpersonationContext';
 import { useSessionMonitor } from '../hooks/useSessionMonitor';
 import { useUserSync } from '../hooks/useUserSync';
 
@@ -54,8 +56,10 @@ export function Layout() {
 
   // Authenticated — render the full app
   return (
+    <ImpersonationProvider>
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <SkipNavLink />
+      <ImpersonationBanner />
       <GlobalHeader />
       <NavigationBar onHelpClick={() => setHelpOpen(true)} />
 
@@ -79,5 +83,6 @@ export function Layout() {
         </Alert>
       </Snackbar>
     </Box>
+    </ImpersonationProvider>
   );
 }
