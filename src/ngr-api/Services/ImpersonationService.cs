@@ -105,7 +105,7 @@ public class ImpersonationService : IImpersonationService
         await _auditService.LogActionAsync(
             "ImpersonationSession", session.Id.ToString(), "End",
             null, $"{{\"endReason\":\"{endReason}\"}}",
-            session.AdminUserId, session.AdminEmail);
+            session.AdminUserId, session.AdminEmail, null);
 
         _logger.LogInformation(
             "Impersonation ended: admin {Admin} → target {Target}, reason {Reason}",

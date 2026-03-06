@@ -196,12 +196,34 @@ builder.Services.AddApplicationInsightsTelemetry();
 
 var app = builder.Build();
 
-// Auto-create database and tables in development
+// Auto-create database and tables in development.
+// EnsureCreated() only creates the DB if it doesn't exist — it won't add new tables to an
+// existing DB when the model changes. We detect schema drift by probing a recently-added table
+// and drop+recreate if it's missing so dev never needs manual SQL intervention.
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.EnsureCreated();
+
+    bool schemaOutOfDate = false;
+    try
+    {
+        dbContext.Database.EnsureCreated();
+        // Probe a table added in the latest schema revision; throws if missing.
+        _ = await dbContext.ImpersonationSessions.AnyAsync();
+    }
+    catch
+    {
+        schemaOutOfDate = true;
+    }
+
+    if (schemaOutOfDate)
+    {
+        Log.Information("Dev schema out of date — dropping and recreating database");
+        await dbContext.Database.EnsureDeletedAsync();
+        await dbContext.Database.EnsureCreatedAsync();
+    }
+
     var emrMappingService = scope.ServiceProvider.GetRequiredService<IEmrMappingService>();
     await emrMappingService.EnsureDefaultMappingsAsync();
 }
