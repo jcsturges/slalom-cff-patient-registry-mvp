@@ -35,6 +35,7 @@ export function DashboardPage() {
   const { data: patientCount, isLoading } = useQuery({
     queryKey: ['patients', 'count'],
     queryFn: () => patientsService.getCount(),
+    staleTime: 0,
   });
 
   return (

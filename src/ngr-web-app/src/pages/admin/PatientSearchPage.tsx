@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Checkbox,
@@ -22,9 +23,10 @@ import {
   Typography,
 } from '@mui/material';
 import { patientsService } from '../../services/patients';
+import { programsService } from '../../services/programs';
 import { useRoles } from '../../hooks/useRoles';
 import { DataTable, type DataTableColumn } from '../../components/DataTable';
-import type { PatientDto } from '../../types';
+import type { PatientDto, CareProgramDto } from '../../types';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -88,9 +90,16 @@ export function PatientSearchPage() {
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const [bulkAction, setBulkAction] = useState('');
-  const [targetProgramId, setTargetProgramId] = useState('');
-  const [sourceProgramId, setSourceProgramId] = useState('');
+  const [targetProgram, setTargetProgram] = useState<CareProgramDto | null>(null);
+  const [sourceProgram, setSourceProgram] = useState<CareProgramDto | null>(null);
   const [bulkReason, setBulkReason] = useState('');
+
+  const { data: allPrograms = [] } = useQuery({
+    queryKey: ['programs', 'all'],
+    queryFn: () => programsService.getAll({ includeInactive: false, includeOrh: false }),
+    enabled: isFoundationAdmin,
+    staleTime: 5 * 60 * 1000,
+  });
 
   const { data: patients = [], isLoading } = useQuery({
     queryKey: ['patients', 'admin-search', { search, page: page + 1, pageSize }],
@@ -103,8 +112,8 @@ export function PatientSearchPage() {
       patientsService.bulkModifyAssociations({
         patientIds: Array.from(selectedIds),
         action: bulkAction,
-        targetProgramId: targetProgramId ? Number(targetProgramId) : undefined,
-        sourceProgramId: sourceProgramId ? Number(sourceProgramId) : undefined,
+        targetProgramId: targetProgram?.id ?? undefined,
+        sourceProgramId: sourceProgram?.id ?? undefined,
         reason: bulkReason || undefined,
       }),
     onSuccess: () => {
@@ -185,16 +194,78 @@ export function PatientSearchPage() {
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             <FormControl fullWidth size="small">
               <InputLabel>Action</InputLabel>
-              <Select value={bulkAction} label="Action" onChange={(e) => setBulkAction(e.target.value)}>
+              <Select
+                value={bulkAction}
+                label="Action"
+                onChange={(e) => {
+                  setBulkAction(e.target.value);
+                  setTargetProgram(null);
+                  setSourceProgram(null);
+                }}
+              >
                 {BULK_ACTIONS.map((a) => <MenuItem key={a.value} value={a.value}>{a.label}</MenuItem>)}
               </Select>
             </FormControl>
 
             {needsTarget && (
-              <TextField label="Target Program ID" value={targetProgramId} onChange={(e) => setTargetProgramId(e.target.value)} size="small" type="number" />
+              <Autocomplete
+                options={allPrograms}
+                value={targetProgram}
+                onChange={(_, val) => setTargetProgram(val)}
+                getOptionLabel={(p) => `${p.name} (${p.programId})`}
+                isOptionEqualToValue={(a, b) => a.id === b.id}
+                filterOptions={(opts, { inputValue }) => {
+                  const term = inputValue.toLowerCase();
+                  return opts.filter(
+                    (p) =>
+                      p.name.toLowerCase().includes(term) ||
+                      String(p.programId).includes(term),
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Target Program" size="small" placeholder="Type name or program ID…" />
+                )}
+                renderOption={(props, p) => (
+                  <li {...props} key={p.id}>
+                    <Box>
+                      <Typography variant="body2">{p.name}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Program {p.programId} · {p.programType}
+                      </Typography>
+                    </Box>
+                  </li>
+                )}
+              />
             )}
             {needsSource && (
-              <TextField label="Source Program ID" value={sourceProgramId} onChange={(e) => setSourceProgramId(e.target.value)} size="small" type="number" />
+              <Autocomplete
+                options={allPrograms}
+                value={sourceProgram}
+                onChange={(_, val) => setSourceProgram(val)}
+                getOptionLabel={(p) => `${p.name} (${p.programId})`}
+                isOptionEqualToValue={(a, b) => a.id === b.id}
+                filterOptions={(opts, { inputValue }) => {
+                  const term = inputValue.toLowerCase();
+                  return opts.filter(
+                    (p) =>
+                      p.name.toLowerCase().includes(term) ||
+                      String(p.programId).includes(term),
+                  );
+                }}
+                renderInput={(params) => (
+                  <TextField {...params} label="Source Program" size="small" placeholder="Type name or program ID…" />
+                )}
+                renderOption={(props, p) => (
+                  <li {...props} key={p.id}>
+                    <Box>
+                      <Typography variant="body2">{p.name}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        Program {p.programId} · {p.programType}
+                      </Typography>
+                    </Box>
+                  </li>
+                )}
+              />
             )}
 
             <TextField
@@ -229,7 +300,12 @@ export function PatientSearchPage() {
           <Button
             variant="contained"
             onClick={() => bulkMutation.mutate()}
-            disabled={!bulkAction || bulkMutation.isPending}
+            disabled={
+              !bulkAction ||
+              (needsTarget && !targetProgram) ||
+              (needsSource && !sourceProgram) ||
+              bulkMutation.isPending
+            }
           >
             Apply Changes
           </Button>

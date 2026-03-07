@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useOktaAuth } from '@okta/okta-react';
 import { programsService } from '../services/programs';
 import type { CareProgramDto } from '../types';
@@ -25,51 +26,39 @@ const ProgramContext = createContext<ProgramContextValue>({
 
 export function ProgramProvider({ children }: { children: ReactNode }) {
   const { authState } = useOktaAuth();
-  const [programs, setPrograms] = useState<CareProgramDto[]>([]);
+  const isAuthenticated = authState?.isAuthenticated ?? false;
+
   const [selectedProgram, setSelectedProgram] = useState<CareProgramDto | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  // Load programs when authenticated
+  // Use React Query so invalidateQueries({ queryKey: ['programs'] }) from ProgramFormPage
+  // triggers an immediate refetch here, updating the header dropdown without a page reload.
+  const { data: programs = [], isLoading: loading } = useQuery({
+    queryKey: ['programs', 'context'],
+    queryFn: () => programsService.getAll({ includeInactive: false, includeOrh: false }),
+    enabled: isAuthenticated,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // Sync selectedProgram whenever the programs list changes (initial load or after invalidation)
   useEffect(() => {
-    if (!authState?.isAuthenticated) {
-      setPrograms([]);
-      setSelectedProgram(null);
-      setLoading(false);
-      return;
-    }
+    if (programs.length === 0) return;
 
-    let cancelled = false;
-    setLoading(true);
+    setSelectedProgram((current) => {
+      // If we already have a selection, refresh it with the latest data from the server
+      if (current) {
+        const refreshed = programs.find((p) => p.id === current.id);
+        return refreshed ?? programs[0];
+      }
 
-    programsService
-      .getAll({ includeInactive: false, includeOrh: false })
-      .then((all) => {
-        if (cancelled) return;
-        setPrograms(all);
+      // Otherwise restore last-selected from localStorage, or default to first program
+      const savedId = localStorage.getItem(STORAGE_KEY);
+      const saved = savedId ? programs.find((p) => p.programId === Number(savedId)) : null;
+      if (saved) return saved;
 
-        // Try to restore last-selected program from localStorage
-        const savedId = localStorage.getItem(STORAGE_KEY);
-        const savedProgram = savedId ? all.find((p) => p.programId === Number(savedId)) : null;
-
-        if (savedProgram) {
-          setSelectedProgram(savedProgram);
-        } else if (all.length > 0) {
-          setSelectedProgram(all[0]);
-          localStorage.setItem(STORAGE_KEY, String(all[0].programId));
-        }
-      })
-      .catch(() => {
-        // Programs may not be accessible for all users — non-critical
-        if (!cancelled) setPrograms([]);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authState?.isAuthenticated]);
+      localStorage.setItem(STORAGE_KEY, String(programs[0].programId));
+      return programs[0];
+    });
+  }, [programs]);
 
   const selectProgram = useCallback(
     (programId: number) => {

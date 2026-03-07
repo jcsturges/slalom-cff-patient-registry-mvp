@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Box,
   Chip,
+  LinearProgress,
   Link,
   Stack,
   Typography,
@@ -124,7 +125,7 @@ export function PatientListPage() {
 
   const programId = selectedProgram?.id;
 
-  const { data: patients = [], isLoading } = useQuery({
+  const { data: patients = [], isLoading, isFetching } = useQuery({
     queryKey: ['patients', 'roster', { programId, page: page + 1, pageSize, search }],
     queryFn: () =>
       patientsService.getAll({
@@ -133,6 +134,7 @@ export function PatientListPage() {
         pageSize,
         searchTerm: search || undefined,
       }),
+    staleTime: 0, // Roster must always reflect current enrollment on mount
   });
 
   const handleRowClick = (row: PatientDto) => {
@@ -164,6 +166,10 @@ export function PatientListPage() {
           Add Patient
         </RoleGatedButton>
       </Stack>
+
+      {isFetching && !isLoading && (
+        <LinearProgress sx={{ mb: 1, borderRadius: 1 }} />
+      )}
 
       <DataTable
         columns={COLUMNS}

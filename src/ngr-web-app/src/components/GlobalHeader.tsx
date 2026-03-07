@@ -67,16 +67,40 @@ export function GlobalHeader() {
           </Typography>
         </Box>
 
-        {/* ── Program selector (authenticated, multi-program users) ── */}
-        {isAuthenticated && programs.length > 1 && selectedProgram && (
+        {/* ── Program context ───────────────────────────────────── */}
+        {isAuthenticated && selectedProgram && programs.length === 1 && (
+          <Box
+            sx={{
+              px: 1.5,
+              py: 0.5,
+              border: '1px solid rgba(255,255,255,0.4)',
+              borderRadius: 1,
+              maxWidth: 260,
+            }}
+          >
+            <Typography variant="body2" noWrap sx={{ color: 'white', opacity: 0.95, lineHeight: 1.4 }}>
+              {selectedProgram.name}
+            </Typography>
+            <Typography variant="caption" noWrap sx={{ color: 'rgba(255,255,255,0.65)', display: 'block' }}>
+              Program {selectedProgram.programId}
+            </Typography>
+          </Box>
+        )}
+
+        {isAuthenticated && selectedProgram && programs.length > 1 && (
           <FormControl
             size="small"
             sx={{
-              minWidth: 200,
+              minWidth: 220,
               '& .MuiOutlinedInput-root': {
                 color: 'white',
-                '& fieldset': { borderColor: 'rgba(255,255,255,0.4)' },
-                '&:hover fieldset': { borderColor: 'rgba(255,255,255,0.7)' },
+                backgroundColor: 'rgba(255,255,255,0.12)',
+                '& fieldset': { borderColor: 'rgba(255,255,255,0.5)' },
+                '&:hover': {
+                  backgroundColor: 'rgba(255,255,255,0.18)',
+                  '& fieldset': { borderColor: 'white' },
+                },
+                '&.Mui-focused fieldset': { borderColor: 'white' },
               },
               '& .MuiSelect-icon': { color: 'white' },
             }}
@@ -97,13 +121,6 @@ export function GlobalHeader() {
               ))}
             </Select>
           </FormControl>
-        )}
-
-        {/* ── Single-program display ──────────────────────────── */}
-        {isAuthenticated && programs.length === 1 && selectedProgram && (
-          <Typography variant="body2" sx={{ opacity: 0.9 }}>
-            {selectedProgram.name} ({selectedProgram.programId})
-          </Typography>
         )}
 
         {/* ── Spacer ──────────────────────────────────────────── */}

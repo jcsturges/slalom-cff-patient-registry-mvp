@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Box,
@@ -37,6 +37,7 @@ const STATUS_OPTIONS = ['Active', 'Inactive', 'Transferred', 'Deceased'];
 export function PatientFormPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { selectedProgram } = useProgram();
   const { canCreatePatient, canEditPatient } = useRoles();
   const isEditing = Boolean(id);
@@ -102,12 +103,21 @@ export function PatientFormPage() {
 
   const createMutation = useMutation({
     mutationFn: (data: CreatePatientDto) => patientsService.create(data),
-    onSuccess: (result) => navigate(`/patients/${result.id}`),
+    onSuccess: (result) => {
+      // refetchType:'all' triggers an immediate background refetch even while PatientListPage
+      // is unmounted, so data is fresh in cache before the user navigates back to the list.
+      void queryClient.invalidateQueries({ queryKey: ['patients', 'roster'], refetchType: 'all' });
+      navigate(`/patients/${result.id}`);
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: (data: UpdatePatientDto) => patientsService.update(Number(id), data),
-    onSuccess: (result) => navigate(`/patients/${result.id}`),
+    onSuccess: (result) => {
+      void queryClient.invalidateQueries({ queryKey: ['patients', 'roster'], refetchType: 'all' });
+      void queryClient.invalidateQueries({ queryKey: ['patient', id] });
+      navigate(`/patients/${result.id}`);
+    },
   });
 
   const reacquireMutation = useMutation({
@@ -116,7 +126,10 @@ export function PatientFormPage() {
         programId: selectedProgram!.id,
         isPrimaryProgram: false,
       }),
-    onSuccess: (_, patientId) => navigate(`/patients/${patientId}`),
+    onSuccess: (_, patientId) => {
+      void queryClient.invalidateQueries({ queryKey: ['patients', 'roster'], refetchType: 'all' });
+      navigate(`/patients/${patientId}`);
+    },
   });
 
   // ── Validation ──────────────────────────────────────────────────
